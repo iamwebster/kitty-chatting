@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
 const { initDB, saveMessage, getRecentMessages } = require('./db');
@@ -12,13 +13,47 @@ const io = socketIo(server);
 
 const PORT = process.env.PORT || 3000;
 
-// Serve static files
+// Middleware
+app.use(express.json());
+app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Store active users
 const users = new Map();
 // Store users who are currently typing
 const typingUsers = new Set();
+
+// API Routes
+// Set username cookie
+app.post('/api/login', (req, res) => {
+  const { username } = req.body;
+  if (username && username.trim()) {
+    res.cookie('username', username.trim(), {
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      httpOnly: false, // Allow client-side access
+      sameSite: 'strict'
+    });
+    res.json({ success: true, username: username.trim() });
+  } else {
+    res.status(400).json({ success: false, error: 'Username is required' });
+  }
+});
+
+// Clear username cookie
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('username');
+  res.json({ success: true });
+});
+
+// Get current username from cookie
+app.get('/api/me', (req, res) => {
+  const username = req.cookies.username;
+  if (username) {
+    res.json({ username });
+  } else {
+    res.json({ username: null });
+  }
+});
 
 io.on('connection', (socket) => {
   console.log('New user connected:', socket.id);

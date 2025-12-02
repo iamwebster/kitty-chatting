@@ -5,6 +5,7 @@ const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
 const usernameInput = document.getElementById('username-input');
 const joinBtn = document.getElementById('join-btn');
+const logoutBtn = document.getElementById('logout-btn');
 const usernameDisplay = document.getElementById('username-display');
 const usersCount = document.getElementById('users-count');
 const messagesContainer = document.getElementById('messages');
@@ -16,22 +17,84 @@ const chatContainer = document.querySelector('.chat-container');
 let currentUsername = '';
 let typingTimeout;
 
+// Check for existing session on page load
+checkAuth();
+
+// Check if user is already logged in
+async function checkAuth() {
+  try {
+    const response = await fetch('/api/me');
+    const data = await response.json();
+
+    if (data.username) {
+      // Auto-login with saved username
+      enterChat(data.username);
+    }
+  } catch (error) {
+    console.error('Auth check error:', error);
+  }
+}
+
+// Logout function
+async function logout() {
+  try {
+    await fetch('/api/logout', { method: 'POST' });
+
+    // Disconnect socket
+    socket.disconnect();
+
+    // Clear UI
+    messagesContainer.innerHTML = '';
+    currentUsername = '';
+    usernameInput.value = '';
+
+    // Show login screen
+    chatScreen.classList.add('hidden');
+    loginScreen.classList.remove('hidden');
+
+    // Reconnect socket for next login
+    socket.connect();
+  } catch (error) {
+    console.error('Logout error:', error);
+  }
+}
+
 // Join chat
 joinBtn.addEventListener('click', joinChat);
+logoutBtn.addEventListener('click', logout);
 usernameInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') joinChat();
 });
 
-function joinChat() {
+async function joinChat() {
   const username = usernameInput.value.trim();
   if (username) {
-    currentUsername = username;
-    socket.emit('user-joined', username);
-    loginScreen.classList.add('hidden');
-    chatScreen.classList.remove('hidden');
-    usernameDisplay.textContent = username;
-    messageInput.focus();
+    // Save username to cookie via API
+    try {
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+
+      if (response.ok) {
+        enterChat(username);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      // Still allow login even if cookie fails
+      enterChat(username);
+    }
   }
+}
+
+function enterChat(username) {
+  currentUsername = username;
+  socket.emit('user-joined', username);
+  loginScreen.classList.add('hidden');
+  chatScreen.classList.remove('hidden');
+  usernameDisplay.textContent = username;
+  messageInput.focus();
 }
 
 // Send message
