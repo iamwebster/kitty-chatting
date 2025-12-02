@@ -301,6 +301,12 @@ socket.on('message-history', (messages) => {
     markMessagesAsRead(messageIdsToRead);
   }
 
+  // Update general chat preview with last message
+  if (messages.length > 0) {
+    const lastMessage = messages[messages.length - 1];
+    updateChatPreview('general', lastMessage.message);
+  }
+
   // Scroll to bottom after loading history
   chatContainer.scrollTop = chatContainer.scrollHeight;
 });
