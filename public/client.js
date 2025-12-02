@@ -154,7 +154,7 @@ socket.on('message-history', (messages) => {
   indicatorDiv.className = 'system-message history-indicator';
 
   if (messages.length >= 50) {
-    indicatorDiv.textContent = '📜 Показаны последние 50 сообщений (всего на странице отображается последние 50)';
+    indicatorDiv.textContent = '📜 На странице отображается последние 50 сообщений';
   } else if (messages.length > 0) {
     indicatorDiv.textContent = `📜 Показано ${messages.length} ${getMessageWord(messages.length)} (на странице отображается до 50 последних)`;
   } else {
