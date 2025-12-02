@@ -20,6 +20,14 @@ let typingTimeout;
 // Check for existing session on page load
 checkAuth();
 
+// Listen for logout events from other tabs
+window.addEventListener('storage', (e) => {
+  if (e.key === 'logout-event') {
+    // Another tab logged out, logout this tab too
+    performLogout();
+  }
+});
+
 // Check if user is already logged in
 async function checkAuth() {
   try {
@@ -35,28 +43,38 @@ async function checkAuth() {
   }
 }
 
-// Logout function
+// Logout function (called when user clicks logout button)
 async function logout() {
   try {
     await fetch('/api/logout', { method: 'POST' });
 
-    // Disconnect socket
-    socket.disconnect();
+    // Trigger logout in all tabs via localStorage
+    localStorage.setItem('logout-event', Date.now().toString());
+    localStorage.removeItem('logout-event');
 
-    // Clear UI
-    messagesContainer.innerHTML = '';
-    currentUsername = '';
-    usernameInput.value = '';
-
-    // Show login screen
-    chatScreen.classList.add('hidden');
-    loginScreen.classList.remove('hidden');
-
-    // Reconnect socket for next login
-    socket.connect();
+    // Logout this tab
+    performLogout();
   } catch (error) {
     console.error('Logout error:', error);
   }
+}
+
+// Perform actual logout (used by both manual logout and cross-tab logout)
+function performLogout() {
+  // Disconnect socket
+  socket.disconnect();
+
+  // Clear UI
+  messagesContainer.innerHTML = '';
+  currentUsername = '';
+  usernameInput.value = '';
+
+  // Show login screen
+  chatScreen.classList.add('hidden');
+  loginScreen.classList.remove('hidden');
+
+  // Reconnect socket for next login
+  socket.connect();
 }
 
 // Join chat
