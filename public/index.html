@@ -30,19 +30,33 @@
         </div>
       </div>
 
-      <div class="chat-container">
-        <div class="messages" id="messages"></div>
-        <div class="typing-indicator" id="typing-indicator"></div>
-      </div>
+      <div class="chat-main">
+        <div class="chat-area">
+          <div class="chat-container">
+            <div class="messages" id="messages"></div>
+            <div class="typing-indicator" id="typing-indicator"></div>
+          </div>
 
-      <div class="message-input-container">
-        <input
-          type="text"
-          id="message-input"
-          placeholder="Type a message..."
-          autocomplete="off"
-        >
-        <button id="send-btn">Send</button>
+          <div class="message-input-container">
+            <input
+              type="text"
+              id="message-input"
+              placeholder="Type a message..."
+              autocomplete="off"
+            >
+            <button id="send-btn">Send</button>
+          </div>
+        </div>
+
+        <div class="online-users-sidebar">
+          <div class="sidebar-header">
+            <h3>Онлайн</h3>
+            <span class="online-count" id="online-count">0</span>
+          </div>
+          <div class="users-list" id="users-list">
+            <!-- Users will be added here dynamically -->
+          </div>
+        </div>
       </div>
     </div>
   </div>

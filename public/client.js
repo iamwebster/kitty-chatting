@@ -8,6 +8,8 @@ const joinBtn = document.getElementById('join-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const usernameDisplay = document.getElementById('username-display');
 const usersCount = document.getElementById('users-count');
+const onlineCount = document.getElementById('online-count');
+const usersList = document.getElementById('users-list');
 const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
@@ -16,6 +18,7 @@ const chatContainer = document.querySelector('.chat-container');
 
 let currentUsername = '';
 let typingTimeout;
+let onlineUsers = []; // Array to track online users (newest first)
 
 // Check for existing session on page load
 checkAuth();
@@ -66,6 +69,8 @@ function performLogout() {
 
   // Clear UI
   messagesContainer.innerHTML = '';
+  usersList.innerHTML = '';
+  onlineUsers = [];
   currentUsername = '';
   usernameInput.value = '';
 
@@ -144,18 +149,26 @@ function stopTyping() {
 // Socket events
 socket.on('user-connected', (data) => {
   usersCount.textContent = data.totalUsers;
+  onlineCount.textContent = data.totalUsers;
   addSystemMessage(`${data.username} joined the chat`);
+
+  // Add user to the top of the list
+  addUserToList(data.username);
 });
 
 socket.on('user-disconnected', (data) => {
   usersCount.textContent = data.totalUsers;
+  onlineCount.textContent = data.totalUsers;
   if (data.username) {
     addSystemMessage(`${data.username} left the chat`);
+    // Remove user from the list
+    removeUserFromList(data.username);
   }
 });
 
 socket.on('user-count-update', (data) => {
   usersCount.textContent = data.totalUsers;
+  onlineCount.textContent = data.totalUsers;
 });
 
 socket.on('new-message', (data) => {
@@ -168,7 +181,9 @@ socket.on('new-message', (data) => {
 });
 
 socket.on('users-list', (users) => {
-  console.log('Current users:', users);
+  // Initialize the online users list
+  onlineUsers = users;
+  renderUsersList();
 });
 
 socket.on('message-history', (messages) => {
@@ -238,6 +253,43 @@ function markMessagesAsRead(messageIds) {
   if (messageIds.length > 0) {
     socket.emit('mark-messages-read', messageIds);
   }
+}
+
+// User list management
+function addUserToList(username) {
+  // Remove if already exists (shouldn't happen, but just in case)
+  onlineUsers = onlineUsers.filter(u => u !== username);
+
+  // Add to the top
+  onlineUsers.unshift(username);
+
+  renderUsersList();
+}
+
+function removeUserFromList(username) {
+  onlineUsers = onlineUsers.filter(u => u !== username);
+  renderUsersList();
+}
+
+function renderUsersList() {
+  usersList.innerHTML = '';
+
+  onlineUsers.forEach(username => {
+    const userItem = document.createElement('div');
+    userItem.className = 'user-item';
+
+    // Highlight current user
+    if (username === currentUsername) {
+      userItem.classList.add('current-user');
+    }
+
+    const userNameSpan = document.createElement('span');
+    userNameSpan.className = 'user-item-name';
+    userNameSpan.textContent = username;
+
+    userItem.appendChild(userNameSpan);
+    usersList.appendChild(userItem);
+  });
 }
 
 // UI functions
