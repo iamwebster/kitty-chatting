@@ -119,6 +119,29 @@ body {
 
 .users-count {
   opacity: 0.9;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.users-count::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  background: #10b981;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .chat-container {
