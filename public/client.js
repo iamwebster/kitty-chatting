@@ -11,6 +11,7 @@ const messagesContainer = document.getElementById('messages');
 const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const typingIndicator = document.getElementById('typing-indicator');
+const chatContainer = document.querySelector('.chat-container');
 
 let currentUsername = '';
 let typingTimeout;
@@ -87,6 +88,22 @@ socket.on('typing-users-update', (typingUsernames) => {
 });
 
 // UI functions
+// Check if user is at the bottom of chat
+function isScrolledToBottom() {
+  if (!chatContainer) return true;
+  const threshold = 100; // pixels from bottom
+  const scrollPosition = chatContainer.scrollTop + chatContainer.clientHeight;
+  const scrollHeight = chatContainer.scrollHeight;
+  return scrollHeight - scrollPosition <= threshold;
+}
+
+// Scroll to bottom only if user was already at bottom
+function smartScroll() {
+  if (isScrolledToBottom()) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  }
+}
+
 function updateTypingIndicator(typingUsernames) {
   if (typingUsernames.length === 0) {
     typingIndicator.textContent = '';
@@ -117,7 +134,13 @@ function addMessage(data) {
   `;
 
   messagesContainer.appendChild(messageDiv);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+  // Always scroll to bottom for own messages, smart scroll for others
+  if (isOwn) {
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+  } else {
+    smartScroll();
+  }
 }
 
 function addSystemMessage(text) {
@@ -125,7 +148,7 @@ function addSystemMessage(text) {
   messageDiv.className = 'system-message';
   messageDiv.textContent = text;
   messagesContainer.appendChild(messageDiv);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  smartScroll();
 }
 
 function escapeHtml(text) {
