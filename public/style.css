@@ -193,6 +193,16 @@ body {
   font-style: italic;
 }
 
+.history-indicator {
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 5px;
+  padding: 10px;
+  margin: 10px 20px;
+  color: #667eea;
+  font-weight: 500;
+  font-style: normal;
+}
+
 .typing-indicator {
   min-height: 20px;
   color: #999;

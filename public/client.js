@@ -82,6 +82,16 @@ socket.on('users-list', (users) => {
 });
 
 socket.on('message-history', (messages) => {
+  // Show indicator if there are messages
+  if (messages.length > 0) {
+    const indicatorDiv = document.createElement('div');
+    indicatorDiv.className = 'system-message history-indicator';
+    indicatorDiv.textContent = messages.length >= 50
+      ? '📜 Показаны последние 50 сообщений'
+      : `📜 Загружено ${messages.length} ${getMessageWord(messages.length)}`;
+    messagesContainer.appendChild(indicatorDiv);
+  }
+
   // Load message history
   messages.forEach(msg => {
     addMessage({
@@ -165,6 +175,22 @@ function addSystemMessage(text) {
   messageDiv.textContent = text;
   messagesContainer.appendChild(messageDiv);
   smartScroll();
+}
+
+function getMessageWord(count) {
+  const lastDigit = count % 10;
+  const lastTwoDigits = count % 100;
+
+  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
+    return 'сообщений';
+  }
+  if (lastDigit === 1) {
+    return 'сообщение';
+  }
+  if (lastDigit >= 2 && lastDigit <= 4) {
+    return 'сообщения';
+  }
+  return 'сообщений';
 }
 
 function escapeHtml(text) {
