@@ -82,15 +82,19 @@ socket.on('users-list', (users) => {
 });
 
 socket.on('message-history', (messages) => {
-  // Show indicator if there are messages
-  if (messages.length > 0) {
-    const indicatorDiv = document.createElement('div');
-    indicatorDiv.className = 'system-message history-indicator';
-    indicatorDiv.textContent = messages.length >= 50
-      ? '📜 Показаны последние 50 сообщений'
-      : `📜 Загружено ${messages.length} ${getMessageWord(messages.length)}`;
-    messagesContainer.appendChild(indicatorDiv);
+  // Always show indicator with 50 message limit info
+  const indicatorDiv = document.createElement('div');
+  indicatorDiv.className = 'system-message history-indicator';
+
+  if (messages.length >= 50) {
+    indicatorDiv.textContent = '📜 Показаны последние 50 сообщений';
+  } else if (messages.length > 0) {
+    indicatorDiv.textContent = `📜 Показано ${messages.length} ${getMessageWord(messages.length)} (лимит: 50 сообщений)`;
+  } else {
+    indicatorDiv.textContent = '📜 История пуста. Станьте первым! (лимит: 50 сообщений)';
   }
+
+  messagesContainer.appendChild(indicatorDiv);
 
   // Load message history
   messages.forEach(msg => {
