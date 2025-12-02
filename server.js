@@ -24,6 +24,8 @@ const users = new Map();
 const userConnections = new Map();
 // Store users who are currently typing
 const typingUsers = new Set();
+// Store read receipts: messageId -> Set of usernames who read it
+const messageReads = new Map();
 
 // API Routes
 // Set username cookie
@@ -115,18 +117,21 @@ io.on('connection', (socket) => {
       broadcastTypingUsers();
     }
 
-    const messageData = {
-      username,
-      message: data.message,
-      timestamp: new Date().toISOString()
-    };
-
     // Save message to database
+    let savedMessage;
     try {
-      await saveMessage(username, data.message);
+      savedMessage = await saveMessage(username, data.message);
     } catch (error) {
       console.error('Error saving message to database:', error);
+      return;
     }
+
+    const messageData = {
+      id: savedMessage.id,
+      username,
+      message: data.message,
+      timestamp: savedMessage.timestamp.toISOString()
+    };
 
     // Broadcast message to all users
     io.emit('new-message', messageData);
@@ -146,6 +151,29 @@ io.on('connection', (socket) => {
       typingUsers.delete(socket.id);
       broadcastTypingUsers();
     }
+  });
+
+  // Handle marking messages as read
+  socket.on('mark-messages-read', (messageIds) => {
+    const username = users.get(socket.id);
+    if (!username || !Array.isArray(messageIds)) return;
+
+    messageIds.forEach(messageId => {
+      if (!messageReads.has(messageId)) {
+        messageReads.set(messageId, new Set());
+      }
+
+      // Add this user to the readers of this message
+      if (!messageReads.get(messageId).has(username)) {
+        messageReads.get(messageId).add(username);
+
+        // Notify all users about this read receipt
+        io.emit('message-read', {
+          messageId,
+          readBy: username
+        });
+      }
+    });
   });
 
   // Handle disconnect

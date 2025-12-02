@@ -142,6 +142,11 @@ socket.on('user-count-update', (data) => {
 
 socket.on('new-message', (data) => {
   addMessage(data);
+
+  // Mark message as read if it's not from current user
+  if (data.username !== currentUsername && data.id) {
+    markMessagesAsRead([data.id]);
+  }
 });
 
 socket.on('users-list', (users) => {
@@ -163,14 +168,29 @@ socket.on('message-history', (messages) => {
 
   messagesContainer.appendChild(indicatorDiv);
 
+  // Collect message IDs from other users to mark as read
+  const messageIdsToRead = [];
+
   // Load message history
   messages.forEach(msg => {
     addMessage({
+      id: msg.id,
       username: msg.username,
       message: msg.message,
       timestamp: msg.timestamp
     }, false); // false = don't scroll for history
+
+    // Collect IDs of messages from other users
+    if (msg.username !== currentUsername) {
+      messageIdsToRead.push(msg.id);
+    }
   });
+
+  // Mark all messages from others as read
+  if (messageIdsToRead.length > 0) {
+    markMessagesAsRead(messageIdsToRead);
+  }
+
   // Scroll to bottom after loading history
   chatContainer.scrollTop = chatContainer.scrollHeight;
 });
@@ -180,6 +200,27 @@ socket.on('typing-users-update', (typingUsernames) => {
   const otherTyping = typingUsernames.filter(name => name !== currentUsername);
   updateTypingIndicator(otherTyping);
 });
+
+socket.on('message-read', (data) => {
+  // Update checkmark to blue when someone reads our message
+  const { messageId, readBy } = data;
+
+  // Find the message element
+  const messageEl = document.querySelector(`[data-message-id="${messageId}"]`);
+  if (messageEl) {
+    const checkmark = messageEl.querySelector('.message-checkmark');
+    if (checkmark && readBy !== currentUsername) {
+      checkmark.classList.add('read');
+    }
+  }
+});
+
+// Helper functions
+function markMessagesAsRead(messageIds) {
+  if (messageIds.length > 0) {
+    socket.emit('mark-messages-read', messageIds);
+  }
+}
 
 // UI functions
 // Check if user is at the bottom of chat
@@ -216,15 +257,23 @@ function addMessage(data, shouldScroll = true) {
   const isOwn = data.username === currentUsername;
   messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
 
+  // Store message ID for read receipts
+  if (data.id) {
+    messageDiv.dataset.messageId = data.id;
+  }
+
   const time = new Date(data.timestamp).toLocaleTimeString('en-US', {
     hour: '2-digit',
     minute: '2-digit'
   });
 
+  // Add checkmark for own messages
+  const checkmark = isOwn ? '<span class="message-checkmark">✓</span>' : '';
+
   messageDiv.innerHTML = `
     ${!isOwn ? `<div class="message-header">${data.username}</div>` : ''}
     <div class="message-text">${escapeHtml(data.message)}</div>
-    <div class="message-time">${time}</div>
+    <div class="message-time">${time}${checkmark}</div>
   `;
 
   messagesContainer.appendChild(messageDiv);
