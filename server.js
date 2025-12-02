@@ -50,6 +50,12 @@ io.on('connection', (socket) => {
   socket.on('send-message', async (data) => {
     const username = users.get(socket.id);
 
+    // Check if username exists (user must be logged in)
+    if (!username) {
+      console.error('Message from undefined user:', socket.id);
+      return;
+    }
+
     // Remove from typing users when sending message
     if (typingUsers.has(socket.id)) {
       typingUsers.delete(socket.id);
@@ -75,7 +81,8 @@ io.on('connection', (socket) => {
 
   // Handle user typing
   socket.on('typing', () => {
-    if (!typingUsers.has(socket.id)) {
+    const username = users.get(socket.id);
+    if (username && !typingUsers.has(socket.id)) {
       typingUsers.add(socket.id);
       broadcastTypingUsers();
     }
@@ -91,6 +98,8 @@ io.on('connection', (socket) => {
   // Handle disconnect
   socket.on('disconnect', () => {
     const username = users.get(socket.id);
+
+    // Remove from users map
     users.delete(socket.id);
 
     // Remove from typing users
@@ -99,17 +108,29 @@ io.on('connection', (socket) => {
       broadcastTypingUsers();
     }
 
-    io.emit('user-disconnected', {
-      username,
-      totalUsers: users.size
-    });
-
-    console.log('User disconnected:', socket.id);
+    // Only emit disconnection if user had a username (was logged in)
+    if (username) {
+      io.emit('user-disconnected', {
+        username,
+        totalUsers: users.size
+      });
+      console.log('User disconnected:', username);
+    }
   });
 });
 
 // Helper function to broadcast typing users
 function broadcastTypingUsers() {
+  // Clean up stale socket IDs from typingUsers
+  const staleSocketIds = [];
+  for (const socketId of typingUsers) {
+    if (!users.has(socketId)) {
+      staleSocketIds.push(socketId);
+    }
+  }
+  staleSocketIds.forEach(id => typingUsers.delete(id));
+
+  // Get valid typing usernames
   const typingUsernames = Array.from(typingUsers)
     .map(socketId => users.get(socketId))
     .filter(username => username); // Filter out undefined values
