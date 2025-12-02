@@ -136,6 +136,10 @@ socket.on('user-disconnected', (data) => {
   }
 });
 
+socket.on('user-count-update', (data) => {
+  usersCount.textContent = data.totalUsers;
+});
+
 socket.on('new-message', (data) => {
   addMessage(data);
 });

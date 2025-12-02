@@ -18,8 +18,10 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active users
+// Store active users: socket.id -> username
 const users = new Map();
+// Store user connections: username -> Set of socket.ids
+const userConnections = new Map();
 // Store users who are currently typing
 const typingUsers = new Set();
 
@@ -62,15 +64,31 @@ io.on('connection', (socket) => {
   socket.on('user-joined', async (username) => {
     users.set(socket.id, username);
 
-    // Notify all users
-    io.emit('user-connected', {
-      username,
-      userId: socket.id,
-      totalUsers: users.size
-    });
+    // Track user connections
+    if (!userConnections.has(username)) {
+      userConnections.set(username, new Set());
+    }
+    userConnections.get(username).add(socket.id);
+
+    // Only notify if this is the first connection for this user
+    const isFirstConnection = userConnections.get(username).size === 1;
+
+    if (isFirstConnection) {
+      // Notify all users about new user
+      io.emit('user-connected', {
+        username,
+        userId: socket.id,
+        totalUsers: userConnections.size
+      });
+    } else {
+      // Update this socket with current user count
+      socket.emit('user-count-update', {
+        totalUsers: userConnections.size
+      });
+    }
 
     // Send current users list to the new user
-    socket.emit('users-list', Array.from(users.values()));
+    socket.emit('users-list', Array.from(userConnections.keys()));
 
     // Send message history to the new user
     try {
@@ -134,22 +152,35 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const username = users.get(socket.id);
 
-    // Remove from users map
-    users.delete(socket.id);
-
-    // Remove from typing users
-    if (typingUsers.has(socket.id)) {
-      typingUsers.delete(socket.id);
-      broadcastTypingUsers();
-    }
-
-    // Only emit disconnection if user had a username (was logged in)
     if (username) {
-      io.emit('user-disconnected', {
-        username,
-        totalUsers: users.size
-      });
-      console.log('User disconnected:', username);
+      // Remove from users map
+      users.delete(socket.id);
+
+      // Remove from user connections
+      if (userConnections.has(username)) {
+        userConnections.get(username).delete(socket.id);
+
+        // If this was the last connection for this user
+        if (userConnections.get(username).size === 0) {
+          userConnections.delete(username);
+
+          // Notify all users about disconnection
+          io.emit('user-disconnected', {
+            username,
+            totalUsers: userConnections.size
+          });
+
+          console.log('User fully disconnected:', username);
+        } else {
+          console.log('User closed one tab:', username, '(remaining:', userConnections.get(username).size, ')');
+        }
+      }
+
+      // Remove from typing users
+      if (typingUsers.has(socket.id)) {
+        typingUsers.delete(socket.id);
+        broadcastTypingUsers();
+      }
     }
   });
 });
