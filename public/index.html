@@ -31,7 +31,22 @@
       </div>
 
       <div class="chat-main">
+        <!-- Left Sidebar: Chat List -->
+        <div class="chats-sidebar">
+          <div class="sidebar-header">
+            <h3>Чаты</h3>
+          </div>
+          <div class="chats-list" id="chats-list">
+            <!-- Chat items will be added here dynamically -->
+          </div>
+        </div>
+
+        <!-- Center: Messages Area -->
         <div class="chat-area">
+          <div class="chat-area-header">
+            <h3 id="current-chat-name">Общий чат</h3>
+          </div>
+
           <div class="chat-container">
             <div class="messages" id="messages"></div>
             <div class="typing-indicator" id="typing-indicator"></div>
@@ -48,6 +63,7 @@
           </div>
         </div>
 
+        <!-- Right Sidebar: Online Users -->
         <div class="online-users-sidebar">
           <div class="sidebar-header">
             <h3>Онлайн</h3>
