@@ -2,6 +2,9 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
+require('dotenv').config();
+
+const { initDB, saveMessage, getRecentMessages } = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +24,7 @@ io.on('connection', (socket) => {
   console.log('New user connected:', socket.id);
 
   // Handle user joining
-  socket.on('user-joined', (username) => {
+  socket.on('user-joined', async (username) => {
     users.set(socket.id, username);
 
     // Notify all users
@@ -33,10 +36,18 @@ io.on('connection', (socket) => {
 
     // Send current users list to the new user
     socket.emit('users-list', Array.from(users.values()));
+
+    // Send message history to the new user
+    try {
+      const messages = await getRecentMessages(50);
+      socket.emit('message-history', messages);
+    } catch (error) {
+      console.error('Error loading message history:', error);
+    }
   });
 
   // Handle new messages
-  socket.on('send-message', (data) => {
+  socket.on('send-message', async (data) => {
     const username = users.get(socket.id);
 
     // Remove from typing users when sending message
@@ -45,11 +56,21 @@ io.on('connection', (socket) => {
       broadcastTypingUsers();
     }
 
-    io.emit('new-message', {
+    const messageData = {
       username,
       message: data.message,
       timestamp: new Date().toISOString()
-    });
+    };
+
+    // Save message to database
+    try {
+      await saveMessage(username, data.message);
+    } catch (error) {
+      console.error('Error saving message to database:', error);
+    }
+
+    // Broadcast message to all users
+    io.emit('new-message', messageData);
   });
 
   // Handle user typing
@@ -96,6 +117,18 @@ function broadcastTypingUsers() {
   io.emit('typing-users-update', typingUsernames);
 }
 
-server.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Initialize database and start server
+async function startServer() {
+  try {
+    await initDB();
+    server.listen(PORT, () => {
+      console.log(`Server is running on http://localhost:${PORT}`);
+      console.log(`Database connected successfully`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();

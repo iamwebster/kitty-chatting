@@ -81,6 +81,19 @@ socket.on('users-list', (users) => {
   console.log('Current users:', users);
 });
 
+socket.on('message-history', (messages) => {
+  // Load message history
+  messages.forEach(msg => {
+    addMessage({
+      username: msg.username,
+      message: msg.message,
+      timestamp: msg.timestamp
+    }, false); // false = don't scroll for history
+  });
+  // Scroll to bottom after loading history
+  chatContainer.scrollTop = chatContainer.scrollHeight;
+});
+
 socket.on('typing-users-update', (typingUsernames) => {
   // Filter out current user from typing list
   const otherTyping = typingUsernames.filter(name => name !== currentUsername);
@@ -117,7 +130,7 @@ function updateTypingIndicator(typingUsernames) {
   }
 }
 
-function addMessage(data) {
+function addMessage(data, shouldScroll = true) {
   const messageDiv = document.createElement('div');
   const isOwn = data.username === currentUsername;
   messageDiv.className = `message ${isOwn ? 'own' : 'other'}`;
@@ -135,11 +148,14 @@ function addMessage(data) {
 
   messagesContainer.appendChild(messageDiv);
 
-  // Always scroll to bottom for own messages, smart scroll for others
-  if (isOwn) {
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-  } else {
-    smartScroll();
+  // Only apply smart scroll if shouldScroll is true
+  if (shouldScroll) {
+    // Always scroll to bottom for own messages, smart scroll for others
+    if (isOwn) {
+      chatContainer.scrollTop = chatContainer.scrollHeight;
+    } else {
+      smartScroll();
+    }
   }
 }
 
