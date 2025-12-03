@@ -101,7 +101,9 @@ async function joinChat() {
       });
 
       if (response.ok) {
-        enterChat(username);
+        const data = await response.json();
+        // Use the full username with tag returned from server
+        enterChat(data.username);
       }
     } catch (error) {
       console.error('Login error:', error);

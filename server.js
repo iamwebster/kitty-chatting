@@ -55,6 +55,15 @@ function generateUniqueUsername(baseUsername) {
   return `${baseUsername}#${tagString}`;
 }
 
+// Helper function to reclaim/reserve a specific username tag
+function reclaimUsernameTag(baseUsername, tag) {
+  if (!usernameTags.has(baseUsername)) {
+    usernameTags.set(baseUsername, new Set([tag]));
+  } else {
+    usernameTags.get(baseUsername).add(tag);
+  }
+}
+
 // Helper function to release username tag
 function releaseUsernameTag(fullUsername) {
   if (!fullUsername.includes('#')) return;
@@ -86,9 +95,10 @@ app.post('/api/login', (req, res) => {
 
     if (existingUsername && existingUsername.includes('#')) {
       // User already has a tagged username, keep it
-      const [existingBase] = existingUsername.split('#');
+      const [existingBase, existingTag] = existingUsername.split('#');
       if (existingBase === baseUsername) {
-        // Same base username, keep the existing tag
+        // Same base username, reclaim the existing tag
+        reclaimUsernameTag(baseUsername, existingTag);
         fullUsername = existingUsername;
       } else {
         // Different base username, generate new tag
