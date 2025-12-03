@@ -92,9 +92,13 @@ body {
   border: 3px solid #D0D0D0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   text-align: center;
-  width: 520px;
+  width: 540px;
+  min-height: 520px;
   animation: slideUp 0.5s ease;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 /* Language Switcher */
@@ -160,14 +164,22 @@ body {
   color: #333;
   font-size: 28px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 1.3;
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .welcome-subtitle {
   color: #666;
   font-size: 15px;
   margin-bottom: 25px;
-  line-height: 1.4;
+  line-height: 1.5;
+  min-height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .features-preview {
@@ -198,7 +210,11 @@ body {
   color: #666;
   font-weight: 500;
   text-align: center;
-  line-height: 1.3;
+  line-height: 1.4;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .login-box input {
@@ -761,7 +777,8 @@ body {
 @media (max-width: 600px) {
   .login-box {
     width: 90%;
-    max-width: 520px;
+    max-width: 540px;
+    min-height: 500px;
     padding: 30px 25px;
   }
 }
@@ -769,8 +786,25 @@ body {
 @media (max-width: 500px) {
   .login-box {
     width: 90%;
+    min-height: 480px;
     padding: 30px 20px;
   }
+
+  .login-box h1 {
+    font-size: 24px;
+    min-height: 60px;
+  }
+
+  .welcome-subtitle {
+    font-size: 13px;
+    min-height: 40px;
+  }
+
+  .feature-text {
+    font-size: 11px;
+    min-height: 32px;
+  }
+}
 
   .chat-container {
     padding: 12px;
