@@ -1,7 +1,7 @@
 {
-  "name": "simple-chat",
+  "name": "world-chatting",
   "version": "1.0.0",
-  "description": "Simple real-time chat application",
+  "description": "World Chatting - modern real-time messenger for global communication",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
