@@ -234,6 +234,25 @@ body {
   border-color: #999;
 }
 
+.error-message {
+  color: #E74C3C;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: -8px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(231, 76, 60, 0.1);
+  border-left: 3px solid #E74C3C;
+  border-radius: 6px;
+  animation: shake 0.4s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
 .login-box button {
   width: 100%;
   padding: 14px;

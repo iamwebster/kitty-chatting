@@ -4,6 +4,7 @@ const socket = io();
 const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
 const usernameInput = document.getElementById('username-input');
+const usernameError = document.getElementById('username-error');
 const joinBtn = document.getElementById('join-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const usernameDisplay = document.getElementById('username-display');
@@ -225,30 +226,58 @@ usernameInput.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') joinChat();
 });
 
+// Hide error when user starts typing
+usernameInput.addEventListener('input', () => {
+  if (usernameInput.value.trim()) {
+    hideUsernameError();
+  }
+});
+
 async function joinChat() {
   const username = usernameInput.value.trim();
-  if (username) {
-    // Initialize audio on user interaction
-    initAudio();
+  if (!username) {
+    // Show error if username is empty
+    showUsernameError();
+    return;
+  }
 
-    // Save username to cookie via API
-    try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username })
-      });
+  // Hide error if it was shown
+  hideUsernameError();
 
-      if (response.ok) {
-        const data = await response.json();
-        // Use the full username with tag returned from server
-        enterChat(data.username);
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      // Still allow login even if cookie fails
-      enterChat(username);
+  // Initialize audio on user interaction
+  initAudio();
+
+  // Save username to cookie via API
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username })
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      // Use the full username with tag returned from server
+      enterChat(data.username);
     }
+  } catch (error) {
+    console.error('Login error:', error);
+    // Still allow login even if cookie fails
+    enterChat(username);
+  }
+}
+
+function showUsernameError() {
+  if (usernameError) {
+    usernameError.textContent = t('usernameRequired');
+    usernameError.classList.remove('hidden');
+    usernameInput.focus();
+  }
+}
+
+function hideUsernameError() {
+  if (usernameError) {
+    usernameError.classList.add('hidden');
   }
 }
 

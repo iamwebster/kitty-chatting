@@ -9,6 +9,7 @@ const translations = {
     featureOnline: 'See who\'s online',
     enterName: 'Enter your name',
     joinChat: 'Join Chat',
+    usernameRequired: 'Please enter your name to continue',
 
     // Chat header
     appName: 'World Chatting',
@@ -53,6 +54,7 @@ const translations = {
     featureOnline: 'Кто онлайн',
     enterName: 'Введите ваше имя',
     joinChat: 'Войти в чат',
+    usernameRequired: 'Пожалуйста, введите ваше имя для продолжения',
 
     // Chat header
     appName: 'World Chatting',
@@ -170,6 +172,12 @@ function updateAllTexts() {
 
   const joinBtn = document.getElementById('join-btn');
   if (joinBtn) joinBtn.textContent = t('joinChat');
+
+  // Update error message if visible
+  const usernameError = document.getElementById('username-error');
+  if (usernameError && !usernameError.classList.contains('hidden')) {
+    usernameError.textContent = t('usernameRequired');
+  }
 
   // Chat screen
   const chatTitle = document.querySelector('.chat-header h2');
