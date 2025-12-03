@@ -124,11 +124,12 @@ body {
   border-color: #D0D0D0;
 }
 
-.lang-btn.active {
-  background: #4A90E2;
-  color: #ffffff;
-  border-color: #4A90E2;
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4);
+.lang-btn.active,
+.language-switcher .lang-btn.active {
+  background: #4A90E2 !important;
+  color: #ffffff !important;
+  border-color: #4A90E2 !important;
+  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4) !important;
   transform: scale(1.05);
 }
 

@@ -61,9 +61,12 @@ function playMessageSound() {
 
 // Update active language button state
 function updateLanguageButtons() {
+  console.log('Updating language buttons, current lang:', currentLang);
   document.querySelectorAll('.lang-btn').forEach(btn => {
+    console.log('Button:', btn.dataset.lang, 'Current:', currentLang);
     if (btn.dataset.lang === currentLang) {
       btn.classList.add('active');
+      console.log('Added active class to', btn.dataset.lang);
     } else {
       btn.classList.remove('active');
     }
