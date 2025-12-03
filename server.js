@@ -5,7 +5,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-const { initDB, generateTripcode, createOrGetTripcodeUser, saveMessage, getRecentMessages } = require('./db');
+const { initDB, generateTripcode, createOrGetTripcodeUser, saveMessage, getRecentMessages, markMessageAsRead, getReadReceiptsForMessages } = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -188,7 +188,18 @@ io.on('connection', (socket) => {
     // Send message history to the new user
     try {
       const messages = await getRecentMessages(50);
-      socket.emit('message-history', messages);
+
+      // Get read receipts for these messages
+      const messageIds = messages.map(m => m.id);
+      const readReceipts = await getReadReceiptsForMessages(messageIds);
+
+      // Attach read receipts to messages
+      const messagesWithReceipts = messages.map(msg => ({
+        ...msg,
+        readBy: readReceipts[msg.id] || []
+      }));
+
+      socket.emit('message-history', messagesWithReceipts);
     } catch (error) {
       console.error('Error loading message history:', error);
     }
@@ -247,26 +258,32 @@ io.on('connection', (socket) => {
   });
 
   // Handle marking messages as read
-  socket.on('mark-messages-read', (messageIds) => {
+  socket.on('mark-messages-read', async (messageIds) => {
     const user = users.get(socket.id);
     if (!user || !user.username || !Array.isArray(messageIds)) return;
 
-    messageIds.forEach(messageId => {
-      if (!messageReads.has(messageId)) {
-        messageReads.set(messageId, new Set());
-      }
+    for (const messageId of messageIds) {
+      // Save to database
+      const saved = await markMessageAsRead(messageId, user.username);
 
-      // Add this user to the readers of this message
-      if (!messageReads.get(messageId).has(user.username)) {
-        messageReads.get(messageId).add(user.username);
+      if (saved) {
+        // Also update in-memory cache
+        if (!messageReads.has(messageId)) {
+          messageReads.set(messageId, new Set());
+        }
 
-        // Notify all users about this read receipt
-        io.emit('message-read', {
-          messageId,
-          readBy: user.username
-        });
+        // Add this user to the readers of this message
+        if (!messageReads.get(messageId).has(user.username)) {
+          messageReads.get(messageId).add(user.username);
+
+          // Notify all users about this read receipt
+          io.emit('message-read', {
+            messageId,
+            readBy: user.username
+          });
+        }
       }
-    });
+    }
   });
 
   // Handle disconnect

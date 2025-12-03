@@ -67,6 +67,25 @@ async function initDB() {
       CREATE INDEX IF NOT EXISTS idx_messages_user_id ON messages(user_id);
     `);
 
+    // Create read_receipts table to track who read which messages
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS read_receipts (
+        id SERIAL PRIMARY KEY,
+        message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+        reader_username VARCHAR(67) NOT NULL,
+        read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(message_id, reader_username)
+      );
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_read_receipts_message_id ON read_receipts(message_id);
+    `);
+
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_read_receipts_reader ON read_receipts(reader_username);
+    `);
+
     console.log('Database initialized successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
@@ -172,6 +191,52 @@ async function getRecentMessages(limit = 50) {
   }
 }
 
+// Mark message as read by a user
+async function markMessageAsRead(messageId, readerUsername) {
+  try {
+    await pool.query(
+      `INSERT INTO read_receipts (message_id, reader_username)
+       VALUES ($1, $2)
+       ON CONFLICT (message_id, reader_username) DO NOTHING`,
+      [messageId, readerUsername]
+    );
+    return true;
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    return false;
+  }
+}
+
+// Get read receipts for a list of messages
+async function getReadReceiptsForMessages(messageIds) {
+  try {
+    if (!messageIds || messageIds.length === 0) {
+      return {};
+    }
+
+    const result = await pool.query(
+      `SELECT message_id, reader_username
+       FROM read_receipts
+       WHERE message_id = ANY($1)`,
+      [messageIds]
+    );
+
+    // Group by message_id
+    const receipts = {};
+    result.rows.forEach(row => {
+      if (!receipts[row.message_id]) {
+        receipts[row.message_id] = [];
+      }
+      receipts[row.message_id].push(row.reader_username);
+    });
+
+    return receipts;
+  } catch (error) {
+    console.error('Error getting read receipts:', error);
+    return {};
+  }
+}
+
 module.exports = {
   initDB,
   generateTripcode,
@@ -179,5 +244,7 @@ module.exports = {
   updateLastSeen,
   saveMessage,
   getRecentMessages,
+  markMessageAsRead,
+  getReadReceiptsForMessages,
   pool
 };

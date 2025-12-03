@@ -493,7 +493,22 @@ socket.on('message-history', (messages) => {
       timestamp: msg.timestamp
     }, false); // false = don't scroll for history
 
-    // Collect IDs of messages from other users
+    // Apply read receipts from database
+    if (msg.readBy && Array.isArray(msg.readBy) && msg.readBy.length > 0) {
+      // Check if anyone other than sender has read it
+      const othersRead = msg.readBy.some(reader => reader !== msg.username);
+      if (othersRead) {
+        const messageEl = document.querySelector(`[data-message-id="${msg.id}"]`);
+        if (messageEl) {
+          const checkmark = messageEl.querySelector('.message-checkmark');
+          if (checkmark) {
+            checkmark.classList.add('read');
+          }
+        }
+      }
+    }
+
+    // Collect IDs of messages from other users to mark as read
     if (msg.username !== currentUsername) {
       messageIdsToRead.push(msg.id);
     }
