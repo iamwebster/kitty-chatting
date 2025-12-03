@@ -5,7 +5,7 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
 
-const { initDB, saveMessage, getRecentMessages } = require('./db');
+const { initDB, generateTripcode, createOrGetTripcodeUser, saveMessage, getRecentMessages } = require('./db');
 
 const app = express();
 const server = http.createServer(app);
@@ -18,121 +18,79 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active users: socket.id -> username (with tag, e.g. "John#0001")
+// Store active users: socket.id -> { userId, fullDisplayName }
 const users = new Map();
-// Store user connections: username -> Set of socket.ids
+// Store user connections: fullDisplayName -> Set of socket.ids
 const userConnections = new Map();
 // Store users who are currently typing
 const typingUsers = new Set();
 // Store read receipts: messageId -> Set of usernames who read it
 const messageReads = new Map();
-// Store username tags: baseUsername -> Set of tags (e.g. "John" -> Set(["0001", "0002"]))
-const usernameTags = new Map();
 
-// Helper function to generate unique username with tag
-function generateUniqueUsername(baseUsername) {
-  // If no one has this base username yet, assign #0001
-  if (!usernameTags.has(baseUsername)) {
-    usernameTags.set(baseUsername, new Set(['0001']));
-    return `${baseUsername}#0001`;
-  }
+// Helper function to parse tripcode input
+function parseTripcodeInput(input) {
+  // Format: "Username#secret" or just "Username"
+  const parts = input.split('#');
+  const username = parts[0].trim();
+  const secret = parts[1] || ''; // Empty string if no secret
 
-  // Find next available tag
-  const usedTags = usernameTags.get(baseUsername);
-  let tag = 1;
+  const tripcode = secret ? generateTripcode(secret) : '';
+  const fullDisplayName = tripcode ? `${username}!${tripcode}` : username;
 
-  while (usedTags.has(String(tag).padStart(4, '0'))) {
-    tag++;
-    if (tag > 9999) {
-      // Fallback: use random 4-digit number
-      tag = Math.floor(Math.random() * 10000);
-      break;
-    }
-  }
-
-  const tagString = String(tag).padStart(4, '0');
-  usedTags.add(tagString);
-  return `${baseUsername}#${tagString}`;
-}
-
-// Helper function to reclaim/reserve a specific username tag
-function reclaimUsernameTag(baseUsername, tag) {
-  if (!usernameTags.has(baseUsername)) {
-    usernameTags.set(baseUsername, new Set([tag]));
-  } else {
-    usernameTags.get(baseUsername).add(tag);
-  }
-}
-
-// Helper function to release username tag
-function releaseUsernameTag(fullUsername) {
-  if (!fullUsername.includes('#')) return;
-
-  const [baseUsername, tag] = fullUsername.split('#');
-
-  if (usernameTags.has(baseUsername)) {
-    const tags = usernameTags.get(baseUsername);
-    tags.delete(tag);
-
-    // Clean up if no more users with this base username
-    if (tags.size === 0) {
-      usernameTags.delete(baseUsername);
-    }
-  }
+  return { username, tripcode, fullDisplayName };
 }
 
 // API Routes
-// Set username cookie
-app.post('/api/login', (req, res) => {
+// Set username cookie (with tripcode support)
+app.post('/api/login', async (req, res) => {
   const { username } = req.body;
-  if (username && username.trim()) {
-    const baseUsername = username.trim();
+  if (!username || !username.trim()) {
+    return res.status(400).json({ success: false, error: 'Username is required' });
+  }
 
-    // Check if user already has a tagged username from cookie
-    const existingUsername = req.cookies.username;
+  try {
+    // Parse tripcode input (Username#secret or just Username)
+    const { username: parsedUsername, tripcode, fullDisplayName } = parseTripcodeInput(username);
 
-    let fullUsername;
+    // Create or get user from database
+    const user = await createOrGetTripcodeUser(parsedUsername, tripcode);
 
-    if (existingUsername && existingUsername.includes('#')) {
-      // User already has a tagged username, keep it
-      const [existingBase, existingTag] = existingUsername.split('#');
-      if (existingBase === baseUsername) {
-        // Same base username, reclaim the existing tag
-        reclaimUsernameTag(baseUsername, existingTag);
-        fullUsername = existingUsername;
-      } else {
-        // Different base username, generate new tag
-        fullUsername = generateUniqueUsername(baseUsername);
-      }
-    } else {
-      // New user or old user without tag, generate new tagged username
-      fullUsername = generateUniqueUsername(baseUsername);
-    }
-
-    res.cookie('username', fullUsername, {
+    // Store full display name in cookie
+    res.cookie('username', fullDisplayName, {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: false, // Allow client-side access
       sameSite: 'strict'
     });
-    res.json({ success: true, username: fullUsername });
-  } else {
-    res.status(400).json({ success: false, error: 'Username is required' });
+
+    // Also store user ID for quick lookups
+    res.cookie('userId', user.id, {
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      httpOnly: false,
+      sameSite: 'strict'
+    });
+
+    res.json({ success: true, username: fullDisplayName, userId: user.id });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ success: false, error: 'Failed to login' });
   }
 });
 
 // Clear username cookie
 app.post('/api/logout', (req, res) => {
   res.clearCookie('username');
+  res.clearCookie('userId');
   res.json({ success: true });
 });
 
 // Get current username from cookie
 app.get('/api/me', (req, res) => {
   const username = req.cookies.username;
+  const userId = req.cookies.userId;
   if (username) {
-    res.json({ username });
+    res.json({ username, userId: userId ? parseInt(userId) : null });
   } else {
-    res.json({ username: null });
+    res.json({ username: null, userId: null });
   }
 });
 
@@ -140,8 +98,13 @@ io.on('connection', (socket) => {
   console.log('New user connected:', socket.id);
 
   // Handle user joining
-  socket.on('user-joined', async (username) => {
-    users.set(socket.id, username);
+  socket.on('user-joined', async (data) => {
+    // data can be either string (username) or object { username, userId }
+    const username = typeof data === 'string' ? data : data.username;
+    const userId = typeof data === 'object' ? data.userId : null;
+
+    // Store user info
+    users.set(socket.id, { username, userId });
 
     // Track user connections
     if (!userConnections.has(username)) {
@@ -180,10 +143,10 @@ io.on('connection', (socket) => {
 
   // Handle new messages
   socket.on('send-message', async (data) => {
-    const username = users.get(socket.id);
+    const user = users.get(socket.id);
 
-    // Check if username exists (user must be logged in)
-    if (!username) {
+    // Check if user exists (user must be logged in)
+    if (!user || !user.username) {
       console.error('Message from undefined user:', socket.id);
       return;
     }
@@ -197,7 +160,7 @@ io.on('connection', (socket) => {
     // Save message to database
     let savedMessage;
     try {
-      savedMessage = await saveMessage(username, data.message);
+      savedMessage = await saveMessage(user.username, data.message, user.userId);
     } catch (error) {
       console.error('Error saving message to database:', error);
       return;
@@ -205,7 +168,7 @@ io.on('connection', (socket) => {
 
     const messageData = {
       id: savedMessage.id,
-      username,
+      username: user.username,
       message: data.message,
       timestamp: savedMessage.timestamp.toISOString()
     };
@@ -216,8 +179,8 @@ io.on('connection', (socket) => {
 
   // Handle user typing
   socket.on('typing', () => {
-    const username = users.get(socket.id);
-    if (username && !typingUsers.has(socket.id)) {
+    const user = users.get(socket.id);
+    if (user && user.username && !typingUsers.has(socket.id)) {
       typingUsers.add(socket.id);
       broadcastTypingUsers();
     }
@@ -232,8 +195,8 @@ io.on('connection', (socket) => {
 
   // Handle marking messages as read
   socket.on('mark-messages-read', (messageIds) => {
-    const username = users.get(socket.id);
-    if (!username || !Array.isArray(messageIds)) return;
+    const user = users.get(socket.id);
+    if (!user || !user.username || !Array.isArray(messageIds)) return;
 
     messageIds.forEach(messageId => {
       if (!messageReads.has(messageId)) {
@@ -241,13 +204,13 @@ io.on('connection', (socket) => {
       }
 
       // Add this user to the readers of this message
-      if (!messageReads.get(messageId).has(username)) {
-        messageReads.get(messageId).add(username);
+      if (!messageReads.get(messageId).has(user.username)) {
+        messageReads.get(messageId).add(user.username);
 
         // Notify all users about this read receipt
         io.emit('message-read', {
           messageId,
-          readBy: username
+          readBy: user.username
         });
       }
     });
@@ -255,9 +218,11 @@ io.on('connection', (socket) => {
 
   // Handle disconnect
   socket.on('disconnect', () => {
-    const username = users.get(socket.id);
+    const user = users.get(socket.id);
 
-    if (username) {
+    if (user && user.username) {
+      const username = user.username;
+
       // Remove from users map
       users.delete(socket.id);
 
@@ -268,9 +233,6 @@ io.on('connection', (socket) => {
         // If this was the last connection for this user
         if (userConnections.get(username).size === 0) {
           userConnections.delete(username);
-
-          // Release username tag
-          releaseUsernameTag(username);
 
           // Notify all users about disconnection
           io.emit('user-disconnected', {
@@ -306,8 +268,11 @@ function broadcastTypingUsers() {
 
   // Get valid typing usernames
   const typingUsernames = Array.from(typingUsers)
-    .map(socketId => users.get(socketId))
-    .filter(username => username); // Filter out undefined values
+    .map(socketId => {
+      const user = users.get(socketId);
+      return user ? user.username : null;
+    })
+    .filter(username => username); // Filter out undefined/null values
 
   io.emit('typing-users-update', typingUsernames);
 }
