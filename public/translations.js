@@ -21,6 +21,10 @@ const translations = {
     secretInvalidFormat: 'Only English letters and numbers allowed',
     secretTooShort: 'Secret key too short (minimum 3 characters)',
     identityPreview: 'Your identity will appear as:',
+    identityFormat: 'Username!hash-from-key',
+    featureMessaging: 'Instant messaging',
+    featureReceipts: 'Read receipts',
+    featureOnline: 'See who\'s online',
 
     // Chat header
     appName: 'World Chatting',
@@ -77,6 +81,10 @@ const translations = {
     secretInvalidFormat: 'Можно использовать только английские буквы и цифры',
     secretTooShort: 'Секретный ключ слишком короткий (минимум 3 символа)',
     identityPreview: 'Ваша личность будет отображаться как:',
+    identityFormat: 'Username!хэш-от-ключа',
+    featureMessaging: 'Мгновенные сообщения',
+    featureReceipts: 'Статусы прочтения',
+    featureOnline: 'Кто онлайн',
 
     // Chat header
     appName: 'World Chatting',
@@ -215,6 +223,14 @@ function updateAllTexts() {
   // Update identity preview
   const previewLabel = document.querySelector('.preview-label');
   if (previewLabel) previewLabel.textContent = t('identityPreview');
+
+  // Update features
+  const featureTexts = document.querySelectorAll('.feature-text');
+  if (featureTexts.length >= 3) {
+    featureTexts[0].textContent = t('featureMessaging');
+    featureTexts[1].textContent = t('featureReceipts');
+    featureTexts[2].textContent = t('featureOnline');
+  }
 
   // Chat screen
   const chatTitle = document.querySelector('.chat-header h2');
