@@ -21,6 +21,44 @@ let currentUsername = '';
 let typingTimeout;
 let onlineUsers = []; // Array to track online users (newest first)
 
+// Audio context for sound effects
+let audioContext;
+
+// Initialize audio context (must be after user interaction)
+function initAudio() {
+  if (!audioContext) {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  }
+}
+
+// Play message notification sound
+function playMessageSound() {
+  initAudio();
+
+  const now = audioContext.currentTime;
+
+  // Create oscillator for the main tone
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+
+  // Soft, pleasant frequency (like a gentle tap)
+  oscillator.frequency.setValueAtTime(800, now);
+  oscillator.frequency.exponentialRampToValueAtTime(600, now + 0.1);
+
+  // Volume envelope - soft attack and quick decay
+  gainNode.gain.setValueAtTime(0, now);
+  gainNode.gain.linearRampToValueAtTime(0.15, now + 0.01); // Soft volume
+  gainNode.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+
+  // Connect nodes
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+
+  // Play
+  oscillator.start(now);
+  oscillator.stop(now + 0.15);
+}
+
 // Check for existing session on page load
 checkAuth();
 
@@ -105,6 +143,9 @@ usernameInput.addEventListener('keypress', (e) => {
 async function joinChat() {
   const username = usernameInput.value.trim();
   if (username) {
+    // Initialize audio on user interaction
+    initAudio();
+
     // Save username to cookie via API
     try {
       const response = await fetch('/api/login', {
@@ -159,6 +200,8 @@ function sendMessage() {
     socket.emit('send-message', { message });
     messageInput.value = '';
     stopTyping();
+    // Play sound when sending message
+    playMessageSound();
   }
 }
 
@@ -200,6 +243,11 @@ socket.on('user-count-update', (data) => {
 
 socket.on('new-message', (data) => {
   addMessage(data);
+
+  // Play sound for messages from other users
+  if (data.username !== currentUsername) {
+    playMessageSound();
+  }
 
   // Mark message as read if it's not from current user
   if (data.username !== currentUsername && data.id) {
