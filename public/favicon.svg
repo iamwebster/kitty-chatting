@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="oceanGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E5C8A;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="landGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6BBF59;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4A9D3F;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Ocean background -->
+  <circle cx="50" cy="50" r="48" fill="url(#oceanGradient)"/>
+
+  <!-- Land masses -->
+  <path d="M 30 25 Q 35 20, 45 22 Q 50 24, 48 30 Q 46 35, 40 33 Q 32 31, 30 25 Z" fill="url(#landGradient)"/>
+  <path d="M 60 35 Q 68 32, 75 38 Q 78 45, 72 50 Q 65 52, 62 48 Q 58 42, 60 35 Z" fill="url(#landGradient)"/>
+  <path d="M 20 50 Q 25 48, 30 52 Q 32 58, 28 62 Q 22 64, 18 60 Q 16 54, 20 50 Z" fill="url(#landGradient)"/>
+  <path d="M 45 60 Q 52 58, 58 63 Q 60 70, 54 75 Q 48 78, 43 72 Q 40 66, 45 60 Z" fill="url(#landGradient)"/>
+
+  <!-- White clouds/atmosphere effect -->
+  <ellipse cx="40" cy="30" rx="8" ry="5" fill="white" opacity="0.3"/>
+  <ellipse cx="70" cy="45" rx="6" ry="4" fill="white" opacity="0.25"/>
+  <ellipse cx="50" cy="70" rx="7" ry="4" fill="white" opacity="0.3"/>
+
+  <!-- Outer glow -->
+  <circle cx="50" cy="50" r="48" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+</svg>
