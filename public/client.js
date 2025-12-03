@@ -4,6 +4,7 @@ const socket = io();
 const loginScreen = document.getElementById('login-screen');
 const chatScreen = document.getElementById('chat-screen');
 const usernameInput = document.getElementById('username-input');
+const secretInput = document.getElementById('secret-input');
 const usernameError = document.getElementById('username-error');
 const joinBtn = document.getElementById('join-btn');
 const logoutBtn = document.getElementById('logout-btn');
@@ -228,47 +229,56 @@ usernameInput.addEventListener('keypress', (e) => {
 
 // Hide error when user starts typing
 usernameInput.addEventListener('input', () => {
-  if (usernameInput.value.trim()) {
-    hideUsernameError();
-  }
+  hideUsernameError();
 });
 
-function validateUsername(input) {
+secretInput.addEventListener('input', () => {
+  hideUsernameError();
+});
+
+function validateUsername(username) {
   // Check if empty
-  if (!input || !input.trim()) {
+  if (!username || !username.trim()) {
     return { valid: false, error: 'usernameRequired' };
   }
 
-  const username = input.trim();
+  const trimmedUsername = username.trim();
 
-  // Check for multiple # symbols
-  const hashCount = (username.match(/#/g) || []).length;
-  if (hashCount > 1) {
-    return { valid: false, error: 'usernameOneHashOnly' };
-  }
-
-  // Check format: only English letters, numbers, and optionally one #
-  // Format: [a-zA-Z0-9]+#?[a-zA-Z0-9]*
-  const validFormat = /^[a-zA-Z0-9]+#?[a-zA-Z0-9]*$/;
-  if (!validFormat.test(username)) {
+  // Check format: only English letters and numbers (no # here, it's separate field now)
+  const validFormat = /^[a-zA-Z0-9]+$/;
+  if (!validFormat.test(trimmedUsername)) {
     return { valid: false, error: 'usernameInvalidFormat' };
   }
 
-  // Check that # is not at the beginning or end
-  if (username.startsWith('#') || username.endsWith('#')) {
-    return { valid: false, error: 'usernameHashPosition' };
-  }
-
-  // Check username length (without secret)
-  const parts = username.split('#');
-  const usernameOnly = parts[0];
-
-  if (usernameOnly.length < 2) {
+  // Check username length
+  if (trimmedUsername.length < 2) {
     return { valid: false, error: 'usernameTooShort' };
   }
 
-  if (usernameOnly.length > 20) {
+  if (trimmedUsername.length > 20) {
     return { valid: false, error: 'usernameTooLong' };
+  }
+
+  return { valid: true };
+}
+
+function validateSecret(secret) {
+  // Secret is now mandatory
+  if (!secret || !secret.trim()) {
+    return { valid: false, error: 'secretRequired' };
+  }
+
+  const trimmedSecret = secret.trim();
+
+  // Check format: only English letters and numbers
+  const validFormat = /^[a-zA-Z0-9]+$/;
+  if (!validFormat.test(trimmedSecret)) {
+    return { valid: false, error: 'secretInvalidFormat' };
+  }
+
+  // Check secret length (min 3 characters for security)
+  if (trimmedSecret.length < 3) {
+    return { valid: false, error: 'secretTooShort' };
   }
 
   return { valid: true };
@@ -276,11 +286,19 @@ function validateUsername(input) {
 
 async function joinChat() {
   const username = usernameInput.value.trim();
+  const secret = secretInput.value.trim();
 
   // Validate username format
-  const validation = validateUsername(username);
-  if (!validation.valid) {
-    showUsernameError(validation.error);
+  const usernameValidation = validateUsername(username);
+  if (!usernameValidation.valid) {
+    showUsernameError(usernameValidation.error);
+    return;
+  }
+
+  // Validate secret format
+  const secretValidation = validateSecret(secret);
+  if (!secretValidation.valid) {
+    showUsernameError(secretValidation.error);
     return;
   }
 
@@ -290,12 +308,15 @@ async function joinChat() {
   // Initialize audio on user interaction
   initAudio();
 
+  // Combine username and secret in "Username#secret" format
+  const combinedUsername = `${username}#${secret}`;
+
   // Save username to cookie via API
   try {
     const response = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username })
+      body: JSON.stringify({ username: combinedUsername })
     });
 
     if (response.ok) {

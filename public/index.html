@@ -41,9 +41,18 @@
           </div>
         </div>
 
-        <input type="text" id="username-input" placeholder="Enter your name" maxlength="50">
+        <div class="input-group">
+          <label for="username-input" class="input-label">Username</label>
+          <input type="text" id="username-input" placeholder="Your username" maxlength="20" autocomplete="off">
+        </div>
+
+        <div class="input-group">
+          <label for="secret-input" class="input-label">Secret Phrase</label>
+          <input type="password" id="secret-input" placeholder="Your secret phrase" maxlength="50" autocomplete="off">
+        </div>
+
         <div id="username-error" class="error-message hidden"></div>
-        <div class="tripcode-hint" data-i18n="tripcodeHint">Tip: Use Name#secret to keep your identity across devices</div>
+        <div class="tripcode-hint" data-i18n="tripcodeHint">Your identity: Username!tripcode</div>
         <button id="join-btn">Join Chat</button>
       </div>
     </div>

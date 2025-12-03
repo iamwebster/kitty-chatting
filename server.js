@@ -27,7 +27,7 @@ const typingUsers = new Set();
 // Store read receipts: messageId -> Set of usernames who read it
 const messageReads = new Map();
 
-// Validate username format
+// Validate username format (now requires tripcode)
 function validateUsername(input) {
   if (!input || !input.trim()) {
     return { valid: false, error: 'Username is required' };
@@ -41,8 +41,13 @@ function validateUsername(input) {
     return { valid: false, error: 'Only one # symbol allowed' };
   }
 
-  // Check format: only English letters, numbers, and optionally one #
-  const validFormat = /^[a-zA-Z0-9]+#?[a-zA-Z0-9]*$/;
+  // Tripcode is now mandatory - must have exactly one #
+  if (hashCount !== 1) {
+    return { valid: false, error: 'Secret phrase is required (format: username#secret)' };
+  }
+
+  // Check format: only English letters, numbers, and one #
+  const validFormat = /^[a-zA-Z0-9]+#[a-zA-Z0-9]+$/;
   if (!validFormat.test(username)) {
     return { valid: false, error: 'Only English letters and numbers allowed' };
   }
@@ -52,9 +57,10 @@ function validateUsername(input) {
     return { valid: false, error: 'Invalid # position' };
   }
 
-  // Check username length (without secret)
+  // Check username and secret length
   const parts = username.split('#');
   const usernameOnly = parts[0];
+  const secret = parts[1];
 
   if (usernameOnly.length < 2) {
     return { valid: false, error: 'Username too short (min 2 characters)' };
@@ -62,6 +68,10 @@ function validateUsername(input) {
 
   if (usernameOnly.length > 20) {
     return { valid: false, error: 'Username too long (max 20 characters)' };
+  }
+
+  if (secret.length < 3) {
+    return { valid: false, error: 'Secret phrase too short (min 3 characters)' };
   }
 
   return { valid: true };

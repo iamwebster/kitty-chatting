@@ -7,15 +7,19 @@ const translations = {
     featureMessaging: 'Instant messaging',
     featureReceipts: 'Read receipts',
     featureOnline: 'See who\'s online',
-    enterName: 'Username (a-z, 0-9)',
+    usernameLabel: 'Username',
+    secretLabel: 'Secret Phrase',
+    enterName: 'Your username',
+    enterSecret: 'Your secret phrase',
     joinChat: 'Join Chat',
-    usernameRequired: 'Please enter your name to continue',
+    usernameRequired: 'Please enter your username',
     usernameInvalidFormat: 'Only English letters and numbers allowed',
-    usernameOneHashOnly: 'Only one # symbol allowed',
-    usernameHashPosition: '# symbol cannot be at the beginning or end',
     usernameTooShort: 'Username too short (minimum 2 characters)',
     usernameTooLong: 'Username too long (maximum 20 characters)',
-    tripcodeHint: '💡 Format: Username#secret (English letters and numbers only)',
+    secretRequired: 'Please enter your secret phrase',
+    secretInvalidFormat: 'Only English letters and numbers allowed',
+    secretTooShort: 'Secret phrase too short (minimum 3 characters)',
+    tripcodeHint: '💡 Your identity will be displayed as: Username!tripcode',
 
     // Chat header
     appName: 'World Chatting',
@@ -58,15 +62,19 @@ const translations = {
     featureMessaging: 'Мгновенные сообщения',
     featureReceipts: 'Статусы прочтения',
     featureOnline: 'Кто онлайн',
-    enterName: 'Имя (a-z, 0-9)',
+    usernameLabel: 'Имя пользователя',
+    secretLabel: 'Секретная фраза',
+    enterName: 'Ваше имя',
+    enterSecret: 'Ваша секретная фраза',
     joinChat: 'Войти в чат',
-    usernameRequired: 'Пожалуйста, введите ваше имя для продолжения',
+    usernameRequired: 'Пожалуйста, введите ваше имя',
     usernameInvalidFormat: 'Можно использовать только английские буквы и цифры',
-    usernameOneHashOnly: 'Можно использовать только один символ #',
-    usernameHashPosition: 'Символ # не может быть в начале или конце',
     usernameTooShort: 'Имя слишком короткое (минимум 2 символа)',
     usernameTooLong: 'Имя слишком длинное (максимум 20 символов)',
-    tripcodeHint: '💡 Формат: Имя#секрет (только английские буквы и цифры)',
+    secretRequired: 'Пожалуйста, введите секретную фразу',
+    secretInvalidFormat: 'Можно использовать только английские буквы и цифры',
+    secretTooShort: 'Секретная фраза слишком короткая (минимум 3 символа)',
+    tripcodeHint: '💡 Ваша личность будет отображаться как: Имя!трипкод',
 
     // Chat header
     appName: 'World Chatting',
@@ -179,17 +187,21 @@ function updateAllTexts() {
     featureTexts[2].textContent = t('featureOnline');
   }
 
+  // Update input labels
+  const inputLabels = document.querySelectorAll('.input-label');
+  if (inputLabels.length >= 2) {
+    inputLabels[0].textContent = t('usernameLabel');
+    inputLabels[1].textContent = t('secretLabel');
+  }
+
   const usernameInput = document.getElementById('username-input');
   if (usernameInput) usernameInput.placeholder = t('enterName');
 
+  const secretInput = document.getElementById('secret-input');
+  if (secretInput) secretInput.placeholder = t('enterSecret');
+
   const joinBtn = document.getElementById('join-btn');
   if (joinBtn) joinBtn.textContent = t('joinChat');
-
-  // Update error message if visible
-  const usernameError = document.getElementById('username-error');
-  if (usernameError && !usernameError.classList.contains('hidden')) {
-    usernameError.textContent = t('usernameRequired');
-  }
 
   // Update tripcode hint
   const tripcodeHint = document.querySelector('.tripcode-hint');
