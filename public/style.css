@@ -126,11 +126,12 @@ body {
 
 .lang-btn.active,
 .language-switcher .lang-btn.active {
-  background: #4A90E2 !important;
+  background: #2E86C1 !important;
   color: #ffffff !important;
-  border-color: #4A90E2 !important;
-  box-shadow: 0 2px 8px rgba(74, 144, 226, 0.4) !important;
-  transform: scale(1.05);
+  border-color: #2E86C1 !important;
+  box-shadow: 0 3px 12px rgba(46, 134, 193, 0.6) !important;
+  transform: scale(1.1);
+  font-weight: 700 !important;
 }
 
 @keyframes slideUp {
