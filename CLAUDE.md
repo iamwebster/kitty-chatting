@@ -27,24 +27,42 @@ This is a strict requirement for this project.
 - Формировать сообщество котоманов
 
 ### Current Features
-- ✅ Real-time чат с WebSockets (Socket.io)
-- ✅ Cookie-based авторизация с автологином
-- ✅ История сообщений (PostgreSQL, последние 50)
-- ✅ Статусы прочитанности (серая/синяя галочка)
-- ✅ Индикатор "печатает..." для нескольких пользователей
-- ✅ Умный автоскролл (не мешает читать историю)
-- ✅ Подсчет уникальных пользователей (не по вкладкам)
-- ✅ Синхронизация логаута между вкладками
-- ✅ CI/CD через GitHub Actions
-- ✅ Космическая тема с 3D звездным фоном (Three.js WebGL)
-- ✅ Темная тема чата с glassmorphism эффектами
-- ✅ Fullscreen desktop app стиль (без рамок)
-- ✅ Звуковые уведомления для сообщений (Web Audio API)
-- ✅ Полная локализация EN/RU с автоопределением языка браузера
-- ✅ Настройки в модальном окне (язык интерфейса)
-- ✅ Полная мобильная адаптивность (portrait + landscape)
-- ✅ Валидация формы логина с красными сообщениями об ошибках
-- ✅ Реалистичный favicon с планетой Земля
+
+**Authentication & Security:**
+- ✅ Tripcode authentication system (mandatory secret key)
+- ✅ Username format: `Username!tripcode` (hash from secret key)
+- ✅ Cookie-based session with auto-login
+- ✅ Secure identity protection (same username, different key = different user)
+
+**Messaging:**
+- ✅ Real-time chat with WebSockets (Socket.io)
+- ✅ Message history (PostgreSQL, last 50 messages)
+- ✅ Viewport-based read receipts (gray → green checkmarks)
+- ✅ Persistent read status (survives page reload)
+- ✅ Smart auto-scroll (doesn't interrupt reading history)
+- ✅ Typing indicator for multiple users
+- ✅ Sound notifications (Web Audio API)
+
+**User Experience:**
+- ✅ Modern login page (900px width, two-column input layout)
+- ✅ Security explanation for secret key authentication
+- ✅ Multi-tab support with unique user counting
+- ✅ Cross-tab logout synchronization
+- ✅ Settings modal (Escape key to close)
+- ✅ Full EN/RU localization with browser language detection
+
+**Design:**
+- ✅ Cosmic theme with 3D star field (Three.js WebGL)
+- ✅ Dark theme with glassmorphism effects
+- ✅ Fullscreen desktop app style
+- ✅ Mobile responsive (portrait + landscape)
+- ✅ Simple settings button animation (scale on hover/click)
+- ✅ Realistic Earth favicon
+
+**Infrastructure:**
+- ✅ PostgreSQL database with users, messages, read_receipts tables
+- ✅ CI/CD via GitHub Actions
+- ✅ Auto-deploy to VPS (Ubuntu + Nginx + PM2)
 
 ## Architecture
 
@@ -79,21 +97,47 @@ This is a strict requirement for this project.
 
 ### Database Schema
 
+**users table:**
+```sql
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  username VARCHAR(50) NOT NULL,
+  tripcode VARCHAR(16) NOT NULL,
+  full_display_name VARCHAR(67) NOT NULL,  -- "Username!tripcode"
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_seen TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  message_count INTEGER DEFAULT 0,
+  UNIQUE(username, tripcode)
+);
+```
+
 **messages table:**
 ```sql
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
   username VARCHAR(50) NOT NULL,
   message TEXT NOT NULL,
+  user_id INTEGER REFERENCES users(id),
   timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
+**read_receipts table:**
+```sql
+CREATE TABLE read_receipts (
+  id SERIAL PRIMARY KEY,
+  message_id INTEGER NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  reader_username VARCHAR(67) NOT NULL,
+  read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(message_id, reader_username)
+);
+```
+
 ### Key Maps and State (server.js)
-- `users` - Map<socket.id, username>
+- `users` - Map<socket.id, {username, userId}>
 - `userConnections` - Map<username, Set<socket.ids>>
 - `typingUsers` - Set<socket.id>
-- `messageReads` - Map<messageId, Set<usernames>>
+- `messageReads` - Map<messageId, Set<usernames>> (in-memory cache, backed by DB)
 
 ## Development Commands
 
@@ -154,60 +198,113 @@ pm2 status
 
 ## Key Implementation Details
 
+### Tripcode Authentication System
+**How it works:**
+1. User enters username (e.g., "Alice") and secret key (e.g., "mySecret123")
+2. Client combines: `Alice#mySecret123` and sends to server
+3. Server generates SHA-256 hash of secret: first 8 chars = tripcode
+4. Display name becomes: `Alice!a1b2c3d4`
+5. Stored in database: username, tripcode, full_display_name
+6. Cookie stores full display name for auto-login
+
+**Security:**
+- Same username + different secret = different user identity
+- Tripcode proves ownership without storing the secret
+- Based on 4chan/2channel tripcode system
+
+**Validation:**
+- Username: 2-20 chars, alphanumeric only
+- Secret key: 3+ chars, alphanumeric only (mandatory)
+- Server validates format: `^[a-zA-Z0-9]+#[a-zA-Z0-9]+$`
+
 ### Multi-Tab User Tracking
-Users are tracked by **username**, not socket connections:
+Users are tracked by **full display name** (Username!tripcode), not socket connections:
 - One user with 3 tabs = 1 online user
-- `userConnections` Map tracks all socket IDs per username
+- `userConnections` Map tracks all socket IDs per display name
 - "joined" event only fires for first tab
 - "left" event only fires when last tab closes
 
-### Read Receipts
-- Each message has unique database ID
-- Client sends `mark-messages-read` with message IDs
-- Server broadcasts `message-read` to update checkmarks
-- Gray checkmark (✓) = sent, Blue checkmark (✓) = read
+### Read Receipts (Viewport-Based + Persistent)
+**How it works:**
+1. **Message sent**: Gray checkmark ✓ appears (unread)
+2. **Recipient scrolls**: `markVisibleMessagesAsRead()` detects viewport visibility
+3. **Save to DB**: `read_receipts` table records reader + timestamp
+4. **Broadcast**: Server emits `message-read` to all clients
+5. **Update UI**: Sender's checkmark turns green ✓ (read)
+6. **Persistence**: On page reload, read status loaded from database
+
+**Key features:**
+- Only marks messages visible in viewport (not just received)
+- Debounced scroll event (300ms) for performance
+- Database persistence survives page reload
+- Green checkmark (#4CAF50) when read by others
+- Gray checkmark (rgba(0,0,0,0.4)) when unread
+
+**Database storage:**
+```sql
+-- Unique constraint prevents duplicate reads
+UNIQUE(message_id, reader_username)
+-- Cascade delete when message deleted
+ON DELETE CASCADE
+```
 
 ### Auto-Login & Logout Sync
-- Username stored in cookie (30 days)
+- Username + userId stored in cookies (30 days)
 - On page load: check `/api/me` → auto-login if cookie exists
 - Logout uses `localStorage` events to sync across all tabs
-- When one tab logs out, all tabs logout
+- When one tab logs out, all tabs logout instantly
 
 ### Typing Indicator
 - Supports multiple simultaneous typers
 - Shows first 2 names: "User1, User2 и еще 5 печатают..."
 - Auto-cleanup of stale socket IDs
+- 1 second debounce timeout
 
 ### Smart Auto-Scroll
-- Only scrolls if user is near bottom (<100px)
-- Doesn't interrupt when reading history
+- Only scrolls if user is near bottom (<100px from bottom)
+- Doesn't interrupt when reading message history
 - Always scrolls for own messages
+- Smooth scroll behavior
 
 ## API Endpoints
 
 ### REST API
-- `POST /api/login` - Set username cookie
-- `POST /api/logout` - Clear username cookie
-- `GET /api/me` - Get current username from cookie
+- `POST /api/login` - Authenticate with tripcode, set username + userId cookies
+  - Body: `{ username: "Alice#secret123" }`
+  - Returns: `{ success: true, username: "Alice!a1b2c3d4", userId: 123 }`
+- `POST /api/logout` - Clear username and userId cookies
+- `GET /api/me` - Get current username and userId from cookies
+  - Returns: `{ username: "Alice!a1b2c3d4", userId: 123 }`
 
 ### Socket.io Events
 
 **Client → Server:**
-- `user-joined` - Join chat with username
+- `user-joined` - Join chat with username and userId
+  - Data: `{ username: "Alice!a1b2c3d4", userId: 123 }`
 - `send-message` - Send new message
-- `typing` - User started typing
-- `stop-typing` - User stopped typing
-- `mark-messages-read` - Mark messages as read
+  - Data: `{ message: "Hello!" }`
+- `typing` - User started typing (no data)
+- `stop-typing` - User stopped typing (no data)
+- `mark-messages-read` - Mark messages as read (saves to database)
+  - Data: `[messageId1, messageId2, ...]`
 
 **Server → Client:**
 - `user-connected` - New user joined
+  - Data: `{ username: "Alice!a1b2c3d4", totalUsers: 5 }`
 - `user-disconnected` - User left
+  - Data: `{ username: "Alice!a1b2c3d4", totalUsers: 4 }`
 - `user-count-update` - Update online count (for additional tabs)
+  - Data: `{ totalUsers: 5 }`
 - `new-message` - New message received
-- `message-history` - Load last 50 messages
+  - Data: `{ id: 123, username: "Alice!a1b2c3d4", message: "Hello!", timestamp: "2025-12-03T..." }`
+- `message-history` - Load last 50 messages with read receipts
+  - Data: `[{ id, username, message, timestamp, readBy: ["User1!abc", "User2!def"] }, ...]`
 - `typing-users-update` - Update typing indicator
-- `message-read` - Message was read by someone
-- `users-list` - List of online users
+  - Data: `["Alice!a1b2c3d4", "Bob!xyz123"]`
+- `message-read` - Message was read by someone (broadcast to all)
+  - Data: `{ messageId: 123, readBy: "Alice!a1b2c3d4" }`
+- `users-list` - List of online users (sent on join)
+  - Data: `["Alice!a1b2c3d4", "Bob!xyz123", ...]`
 
 ## Deployment & CI/CD
 
@@ -256,39 +353,66 @@ Located at: `/etc/nginx/sites-available/kitty-chatting`
 
 ## Common Issues & Solutions
 
-### "undefined" usernames
-- Fixed: server validates username exists before operations
+### Read receipts not persisting after reload
+- **Fixed**: Now saved to `read_receipts` table in PostgreSQL
+- Read status loads from database on page load
+- Green checkmarks restored correctly after refresh
+
+### Checkmarks turning green immediately
+- **Fixed**: Viewport-based detection instead of auto-mark on receive
+- Messages only marked as read when visible in chat container
+- 300ms debounced scroll event for performance
+
+### "undefined" usernames in chat
+- **Fixed**: Server validates username exists before operations
 - Auto-cleanup of stale socket IDs in typing indicator
 
 ### Duplicate online counts
-- Fixed: track by username, not socket ID
+- **Fixed**: Track by full display name (Username!tripcode), not socket ID
 - `userConnections` Map handles multiple tabs per user
+- First tab triggers "joined" event, last tab triggers "left"
 
 ### Logout doesn't work in all tabs
-- Fixed: localStorage events sync logout across tabs
-- Cookie is cleared and all tabs redirect to login
+- **Fixed**: localStorage events sync logout across tabs
+- Cookie is cleared and all tabs redirect to login instantly
+
+### Tripcode validation errors
+- Username must be 2-20 chars, alphanumeric only
+- Secret key must be 3+ chars, alphanumeric only
+- Format: `Username#secret` (exactly one # symbol required)
 
 ### Database permission errors
 - Run: `GRANT ALL ON SCHEMA public TO chatuser`
 - Set: `ALTER SCHEMA public OWNER TO chatuser`
+- Check: `\du` to list users and permissions
 
 ## Color Scheme & Branding
 
 ### Primary Colors (Dark Cosmic Theme)
 - Cosmic gradient: `#0f0c29` → `#302b63` → `#24243e` → `#1a1a2e`
-- Read checkmark: `#2196F3` (blue)
-- Unread checkmark: `rgba(0, 0, 0, 0.4)` (gray)
+- Read checkmark: `#4CAF50` (green) - indicates message read by others
+- Unread checkmark: `rgba(0, 0, 0, 0.4)` (gray) - message not yet read
 - Online indicator: `#4CAF50` (green)
 - Active language button: `#27AE60` (green)
 - Error messages: `#E74C3C` (red)
 - Buttons/accents: `#4A90E2` (blue)
+- Login page gradients:
+  - Auth explanation: `#667eea` → `#764ba2` (purple)
+  - Identity preview: `#f093fb` → `#f5576c` (pink)
+  - Join button: `#667eea` → `#764ba2` (purple)
 
 ### Theme
-Космический мессенджер с темной темой, эффектами glassmorphism, 3D звездным фоном и футуристичным дизайном для глобального сообщества.
+Modern global chat messenger with dark cosmic theme, glassmorphism effects, 3D star field background, and futuristic design. Wide login page (900px) with clean, professional appearance.
 
 ### Design Elements
-- **3D Star Field**: 6000 stars with varying sizes, rotating slowly
+- **Login Page**: 900px width, modern glassmorphism, two-column input layout
+- **3D Star Field**: 6000 stars with varying sizes, rotating slowly (Three.js)
 - **Glassmorphism**: Semi-transparent UI with backdrop-filter blur
 - **Fullscreen Layout**: No borders/margins, native app feel
-- **Animations**: Smooth transitions, shake effects, rotating settings icon
-- **Responsive**: Breakpoints at 500px, 400px + landscape optimization
+- **Animations**:
+  - Smooth transitions
+  - Shake effects on errors
+  - Simple scale animation on settings button (no rotation)
+  - Escape key closes modals
+- **Responsive**: Breakpoints at 600px, 500px, 400px + landscape optimization
+- **Accessibility**: Keyboard navigation (Escape to close modal)
