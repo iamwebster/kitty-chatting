@@ -15,6 +15,7 @@ const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const typingIndicator = document.getElementById('typing-indicator');
 const chatContainer = document.querySelector('.chat-container');
+const animatedBackground = document.querySelector('.animated-background');
 
 let currentUsername = '';
 let typingTimeout;
@@ -78,6 +79,14 @@ function performLogout() {
   chatScreen.classList.add('hidden');
   loginScreen.classList.remove('hidden');
 
+  // Show animated background again
+  if (animatedBackground) {
+    animatedBackground.style.display = 'block';
+    setTimeout(() => {
+      animatedBackground.style.opacity = '1';
+    }, 10);
+  }
+
   // Reconnect socket for next login
   socket.connect();
 }
@@ -120,6 +129,14 @@ function enterChat(username) {
   chatScreen.classList.remove('hidden');
   usernameDisplay.textContent = username;
   messageInput.focus();
+
+  // Hide animated background when entering chat
+  if (animatedBackground) {
+    animatedBackground.style.opacity = '0';
+    setTimeout(() => {
+      animatedBackground.style.display = 'none';
+    }, 500);
+  }
 }
 
 // Send message
