@@ -92,8 +92,7 @@ body {
   border: 3px solid #D0D0D0;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   text-align: center;
-  min-width: 400px;
-  max-width: 500px;
+  width: 520px;
   animation: slideUp 0.5s ease;
   position: relative;
 }
@@ -126,10 +125,10 @@ body {
 
 .lang-btn.active,
 .language-switcher .lang-btn.active {
-  background: #2E86C1 !important;
+  background: #27AE60 !important;
   color: #ffffff !important;
-  border-color: #2E86C1 !important;
-  box-shadow: 0 3px 12px rgba(46, 134, 193, 0.6) !important;
+  border-color: #27AE60 !important;
+  box-shadow: 0 3px 12px rgba(39, 174, 96, 0.6) !important;
   transform: scale(1.1);
   font-weight: 700 !important;
 }
@@ -310,10 +309,10 @@ body {
 }
 
 .language-switcher-chat .lang-btn.active {
-  background: rgba(100, 150, 255, 0.5);
+  background: rgba(39, 174, 96, 0.5);
   color: #ffffff;
-  border-color: rgba(100, 150, 255, 0.8);
-  box-shadow: 0 0 12px rgba(100, 150, 255, 0.6);
+  border-color: rgba(39, 174, 96, 0.8);
+  box-shadow: 0 0 12px rgba(39, 174, 96, 0.6);
   transform: scale(1.05);
 }
 
@@ -759,11 +758,18 @@ body {
   }
 }
 
+@media (max-width: 600px) {
+  .login-box {
+    width: 90%;
+    max-width: 520px;
+    padding: 30px 25px;
+  }
+}
+
 @media (max-width: 500px) {
   .login-box {
-    min-width: auto;
     width: 90%;
-    padding: 30px 25px;
+    padding: 30px 20px;
   }
 
   .chat-container {
