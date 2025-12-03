@@ -18,7 +18,7 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Store active users: socket.id -> username
+// Store active users: socket.id -> username (with tag, e.g. "John#0001")
 const users = new Map();
 // Store user connections: username -> Set of socket.ids
 const userConnections = new Map();
@@ -26,18 +26,85 @@ const userConnections = new Map();
 const typingUsers = new Set();
 // Store read receipts: messageId -> Set of usernames who read it
 const messageReads = new Map();
+// Store username tags: baseUsername -> Set of tags (e.g. "John" -> Set(["0001", "0002"]))
+const usernameTags = new Map();
+
+// Helper function to generate unique username with tag
+function generateUniqueUsername(baseUsername) {
+  // If no one has this base username yet, assign #0001
+  if (!usernameTags.has(baseUsername)) {
+    usernameTags.set(baseUsername, new Set(['0001']));
+    return `${baseUsername}#0001`;
+  }
+
+  // Find next available tag
+  const usedTags = usernameTags.get(baseUsername);
+  let tag = 1;
+
+  while (usedTags.has(String(tag).padStart(4, '0'))) {
+    tag++;
+    if (tag > 9999) {
+      // Fallback: use random 4-digit number
+      tag = Math.floor(Math.random() * 10000);
+      break;
+    }
+  }
+
+  const tagString = String(tag).padStart(4, '0');
+  usedTags.add(tagString);
+  return `${baseUsername}#${tagString}`;
+}
+
+// Helper function to release username tag
+function releaseUsernameTag(fullUsername) {
+  if (!fullUsername.includes('#')) return;
+
+  const [baseUsername, tag] = fullUsername.split('#');
+
+  if (usernameTags.has(baseUsername)) {
+    const tags = usernameTags.get(baseUsername);
+    tags.delete(tag);
+
+    // Clean up if no more users with this base username
+    if (tags.size === 0) {
+      usernameTags.delete(baseUsername);
+    }
+  }
+}
 
 // API Routes
 // Set username cookie
 app.post('/api/login', (req, res) => {
   const { username } = req.body;
   if (username && username.trim()) {
-    res.cookie('username', username.trim(), {
+    const baseUsername = username.trim();
+
+    // Check if user already has a tagged username from cookie
+    const existingUsername = req.cookies.username;
+
+    let fullUsername;
+
+    if (existingUsername && existingUsername.includes('#')) {
+      // User already has a tagged username, keep it
+      const [existingBase] = existingUsername.split('#');
+      if (existingBase === baseUsername) {
+        // Same base username, keep the existing tag
+        fullUsername = existingUsername;
+      } else {
+        // Different base username, generate new tag
+        fullUsername = generateUniqueUsername(baseUsername);
+      }
+    } else {
+      // New user or old user without tag, generate new tagged username
+      fullUsername = generateUniqueUsername(baseUsername);
+    }
+
+    res.cookie('username', fullUsername, {
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: false, // Allow client-side access
       sameSite: 'strict'
     });
-    res.json({ success: true, username: username.trim() });
+    res.json({ success: true, username: fullUsername });
   } else {
     res.status(400).json({ success: false, error: 'Username is required' });
   }
@@ -191,6 +258,9 @@ io.on('connection', (socket) => {
         // If this was the last connection for this user
         if (userConnections.get(username).size === 0) {
           userConnections.delete(username);
+
+          // Release username tag
+          releaseUsernameTag(username);
 
           // Notify all users about disconnection
           io.emit('user-disconnected', {
