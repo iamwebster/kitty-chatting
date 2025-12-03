@@ -59,23 +59,6 @@ function playMessageSound() {
   oscillator.stop(now + 0.15);
 }
 
-// Initialize language system
-initLanguage();
-updateAllTexts();
-updateLanguageButtons();
-
-// Check for existing session on page load
-checkAuth();
-
-// Language switcher event listeners
-document.querySelectorAll('.lang-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const lang = btn.dataset.lang;
-    setLanguage(lang);
-    updateLanguageButtons();
-  });
-});
-
 // Update active language button state
 function updateLanguageButtons() {
   document.querySelectorAll('.lang-btn').forEach(btn => {
@@ -86,6 +69,26 @@ function updateLanguageButtons() {
     }
   });
 }
+
+// Wait for DOM to be ready before initializing
+document.addEventListener('DOMContentLoaded', () => {
+  // Initialize language system
+  initLanguage();
+  updateAllTexts();
+  updateLanguageButtons();
+
+  // Language switcher event listeners
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang;
+      setLanguage(lang);
+      updateLanguageButtons();
+    });
+  });
+
+  // Check for existing session on page load
+  checkAuth();
+});
 
 // Listen for logout events from other tabs
 window.addEventListener('storage', (e) => {
