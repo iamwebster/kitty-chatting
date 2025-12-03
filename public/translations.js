@@ -4,22 +4,23 @@ const translations = {
     // Login screen
     welcome: 'Welcome to World Chatting',
     subtitle: 'Connect with people from around the globe in real-time',
-    featureMessaging: 'Instant messaging',
-    featureReceipts: 'Read receipts',
-    featureOnline: 'See who\'s online',
+    authTitle: 'Secure Authentication',
+    authExplanation: 'Your identity is protected by a <strong>secret key</strong> that only you know. Even if someone uses the same username, they can\'t impersonate you without your secret key.',
     usernameLabel: 'Username',
-    secretLabel: 'Secret Phrase',
-    enterName: 'Your username',
-    enterSecret: 'Your secret phrase',
+    secretLabel: 'Secret Key',
+    enterName: 'Enter your username',
+    enterSecret: 'Enter your secret key',
+    usernameHint: '2-20 characters, letters and numbers only',
+    secretHint: '⚠️ Remember this key! You\'ll need it to login again',
     joinChat: 'Join Chat',
     usernameRequired: 'Please enter your username',
     usernameInvalidFormat: 'Only English letters and numbers allowed',
     usernameTooShort: 'Username too short (minimum 2 characters)',
     usernameTooLong: 'Username too long (maximum 20 characters)',
-    secretRequired: 'Please enter your secret phrase',
+    secretRequired: 'Please enter your secret key',
     secretInvalidFormat: 'Only English letters and numbers allowed',
-    secretTooShort: 'Secret phrase too short (minimum 3 characters)',
-    tripcodeHint: '💡 Your identity will be displayed as: Username!tripcode',
+    secretTooShort: 'Secret key too short (minimum 3 characters)',
+    identityPreview: 'Your identity will appear as:',
 
     // Chat header
     appName: 'World Chatting',
@@ -59,22 +60,23 @@ const translations = {
     // Login screen
     welcome: 'Добро пожаловать в World Chatting',
     subtitle: 'Общайтесь с людьми со всего мира в реальном времени',
-    featureMessaging: 'Мгновенные сообщения',
-    featureReceipts: 'Статусы прочтения',
-    featureOnline: 'Кто онлайн',
+    authTitle: 'Безопасная аутентификация',
+    authExplanation: 'Ваша личность защищена <strong>секретным ключом</strong>, который знаете только вы. Даже если кто-то использует такое же имя, он не сможет выдать себя за вас без вашего секретного ключа.',
     usernameLabel: 'Имя пользователя',
-    secretLabel: 'Секретная фраза',
-    enterName: 'Ваше имя',
-    enterSecret: 'Ваша секретная фраза',
+    secretLabel: 'Секретный ключ',
+    enterName: 'Введите ваше имя',
+    enterSecret: 'Введите ваш секретный ключ',
+    usernameHint: '2-20 символов, только буквы и цифры',
+    secretHint: '⚠️ Запомните этот ключ! Он понадобится для входа',
     joinChat: 'Войти в чат',
     usernameRequired: 'Пожалуйста, введите ваше имя',
     usernameInvalidFormat: 'Можно использовать только английские буквы и цифры',
     usernameTooShort: 'Имя слишком короткое (минимум 2 символа)',
     usernameTooLong: 'Имя слишком длинное (максимум 20 символов)',
-    secretRequired: 'Пожалуйста, введите секретную фразу',
+    secretRequired: 'Пожалуйста, введите секретный ключ',
     secretInvalidFormat: 'Можно использовать только английские буквы и цифры',
-    secretTooShort: 'Секретная фраза слишком короткая (минимум 3 символа)',
-    tripcodeHint: '💡 Ваша личность будет отображаться как: Имя!трипкод',
+    secretTooShort: 'Секретный ключ слишком короткий (минимум 3 символа)',
+    identityPreview: 'Ваша личность будет отображаться как:',
 
     // Chat header
     appName: 'World Chatting',
@@ -180,15 +182,15 @@ function updateAllTexts() {
   const subtitle = document.querySelector('.welcome-subtitle');
   if (subtitle) subtitle.textContent = t('subtitle');
 
-  const featureTexts = document.querySelectorAll('.feature-text');
-  if (featureTexts.length >= 3) {
-    featureTexts[0].textContent = t('featureMessaging');
-    featureTexts[1].textContent = t('featureReceipts');
-    featureTexts[2].textContent = t('featureOnline');
-  }
+  // Auth explanation section
+  const explanationTitle = document.querySelector('.explanation-title');
+  if (explanationTitle) explanationTitle.textContent = t('authTitle');
+
+  const explanationText = document.querySelector('.explanation-text');
+  if (explanationText) explanationText.innerHTML = t('authExplanation');
 
   // Update input labels
-  const inputLabels = document.querySelectorAll('.input-label');
+  const inputLabels = document.querySelectorAll('.label-text');
   if (inputLabels.length >= 2) {
     inputLabels[0].textContent = t('usernameLabel');
     inputLabels[1].textContent = t('secretLabel');
@@ -200,12 +202,19 @@ function updateAllTexts() {
   const secretInput = document.getElementById('secret-input');
   if (secretInput) secretInput.placeholder = t('enterSecret');
 
+  // Update input hints
+  const inputHints = document.querySelectorAll('.input-hint');
+  if (inputHints.length >= 2) {
+    inputHints[0].textContent = t('usernameHint');
+    inputHints[1].textContent = t('secretHint');
+  }
+
   const joinBtn = document.getElementById('join-btn');
   if (joinBtn) joinBtn.textContent = t('joinChat');
 
-  // Update tripcode hint
-  const tripcodeHint = document.querySelector('.tripcode-hint');
-  if (tripcodeHint) tripcodeHint.textContent = t('tripcodeHint');
+  // Update identity preview
+  const previewLabel = document.querySelector('.preview-label');
+  if (previewLabel) previewLabel.textContent = t('identityPreview');
 
   // Chat screen
   const chatTitle = document.querySelector('.chat-header h2');
