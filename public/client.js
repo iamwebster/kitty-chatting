@@ -200,6 +200,9 @@ function enterChat(username) {
   usernameDisplay.textContent = username;
   messageInput.focus();
 
+  // Update language buttons for chat screen
+  updateLanguageButtons();
+
   // Hide animated background when entering chat
   if (animatedBackground) {
     animatedBackground.style.opacity = '0';
