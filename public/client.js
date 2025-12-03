@@ -15,16 +15,10 @@ const messageInput = document.getElementById('message-input');
 const sendBtn = document.getElementById('send-btn');
 const typingIndicator = document.getElementById('typing-indicator');
 const chatContainer = document.querySelector('.chat-container');
-const chatsList = document.getElementById('chats-list');
-const currentChatName = document.getElementById('current-chat-name');
 
 let currentUsername = '';
 let typingTimeout;
 let onlineUsers = []; // Array to track online users (newest first)
-let currentChatId = 'general'; // 'general' or 'username' for private chats
-let chats = [
-  { id: 'general', name: 'Общий чат', pinned: true, lastMessage: '', unread: 0 }
-]; // Array to track all chats
 
 // Check for existing session on page load
 checkAuth();
@@ -123,10 +117,6 @@ function enterChat(username) {
   loginScreen.classList.add('hidden');
   chatScreen.classList.remove('hidden');
   usernameDisplay.textContent = username;
-
-  // Render chats list
-  renderChatsList();
-
   messageInput.focus();
 }
 
@@ -139,19 +129,7 @@ messageInput.addEventListener('keypress', (e) => {
 function sendMessage() {
   const message = messageInput.value.trim();
   if (message) {
-    // Send to current chat (general or private)
-    if (currentChatId === 'general') {
-      socket.emit('send-message', { message });
-    } else {
-      socket.emit('send-private-message', {
-        to: currentChatId,
-        message
-      });
-    }
-
-    // Update chat preview
-    updateChatPreview(currentChatId, message);
-
+    socket.emit('send-message', { message });
     messageInput.value = '';
     stopTyping();
   }
@@ -194,67 +172,12 @@ socket.on('user-count-update', (data) => {
 });
 
 socket.on('new-message', (data) => {
-  // Only show message if we're in general chat
-  if (currentChatId === 'general') {
-    addMessage(data);
+  addMessage(data);
 
-    // Mark message as read if it's not from current user
-    if (data.username !== currentUsername && data.id) {
-      markMessagesAsRead([data.id]);
-    }
+  // Mark message as read if it's not from current user
+  if (data.username !== currentUsername && data.id) {
+    markMessagesAsRead([data.id]);
   }
-
-  // Update chat preview
-  updateChatPreview('general', data.message);
-});
-
-socket.on('private-message', (data) => {
-  // data = { from, message, timestamp, id }
-  const chatId = data.from;
-
-  // Create chat if it doesn't exist
-  if (!chats.find(c => c.id === chatId)) {
-    chats.push({
-      id: chatId,
-      name: chatId,
-      pinned: false,
-      lastMessage: '',
-      unread: 0
-    });
-    renderChatsList();
-  }
-
-  // Update chat preview
-  updateChatPreview(chatId, data.message);
-
-  // Only show message if we're in this private chat
-  if (currentChatId === chatId) {
-    addMessage({
-      id: data.id,
-      username: data.from,
-      message: data.message,
-      timestamp: data.timestamp
-    });
-
-    // Mark as read
-    if (data.id) {
-      markMessagesAsRead([data.id]);
-    }
-  }
-});
-
-socket.on('chat-deleted', (data) => {
-  // Remove chat from list
-  chats = chats.filter(c => c.id !== data.chatId);
-  renderChatsList();
-
-  // If we're currently in this chat, switch to general
-  if (currentChatId === data.chatId) {
-    switchToChat('general');
-  }
-
-  // Show system message
-  addSystemMessage(`Чат с ${data.chatId} был удален из-за неактивности`);
 });
 
 socket.on('users-list', (users) => {
@@ -299,12 +222,6 @@ socket.on('message-history', (messages) => {
   // Mark all messages from others as read
   if (messageIdsToRead.length > 0) {
     markMessagesAsRead(messageIdsToRead);
-  }
-
-  // Update general chat preview with last message
-  if (messages.length > 0) {
-    const lastMessage = messages[messages.length - 1];
-    updateChatPreview('general', lastMessage.message);
   }
 
   // Scroll to bottom after loading history
@@ -369,11 +286,6 @@ function renderUsersList() {
     const userNameSpan = document.createElement('span');
     userNameSpan.className = 'user-item-name';
     userNameSpan.textContent = username;
-
-    // Click handler to open private chat
-    userItem.addEventListener('click', () => {
-      openPrivateChat(username);
-    });
 
     userItem.appendChild(userNameSpan);
     usersList.appendChild(userItem);
@@ -475,103 +387,4 @@ function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
-}
-
-// Chat management functions
-function renderChatsList() {
-  chatsList.innerHTML = '';
-
-  chats.forEach(chat => {
-    const chatItem = document.createElement('div');
-    chatItem.className = 'chat-item';
-    chatItem.dataset.chatId = chat.id;
-
-    if (chat.pinned) {
-      chatItem.classList.add('pinned');
-    }
-
-    if (chat.id === currentChatId) {
-      chatItem.classList.add('active');
-    }
-
-    const chatNameDiv = document.createElement('div');
-    chatNameDiv.className = 'chat-item-name';
-    chatNameDiv.textContent = chat.name;
-
-    const chatPreviewDiv = document.createElement('div');
-    chatPreviewDiv.className = 'chat-item-preview';
-    chatPreviewDiv.textContent = chat.lastMessage || 'Нет сообщений';
-
-    chatItem.appendChild(chatNameDiv);
-    chatItem.appendChild(chatPreviewDiv);
-
-    // Click handler to switch chats
-    chatItem.addEventListener('click', () => {
-      switchToChat(chat.id);
-    });
-
-    chatsList.appendChild(chatItem);
-  });
-}
-
-function switchToChat(chatId) {
-  if (currentChatId === chatId) return;
-
-  currentChatId = chatId;
-
-  // Find the chat
-  const chat = chats.find(c => c.id === chatId);
-  if (!chat) return;
-
-  // Update header
-  currentChatName.textContent = chat.name;
-
-  // Clear messages
-  messagesContainer.innerHTML = '';
-  typingIndicator.textContent = '';
-
-  // Re-render chats list to update active state
-  renderChatsList();
-
-  // Emit event to server to switch chat
-  if (chatId === 'general') {
-    socket.emit('switch-to-general');
-  } else {
-    socket.emit('switch-to-private', chatId);
-  }
-
-  // Focus message input
-  messageInput.focus();
-}
-
-function openPrivateChat(username) {
-  // Don't open chat with yourself
-  if (username === currentUsername) return;
-
-  // Check if chat already exists
-  let chat = chats.find(c => c.id === username);
-
-  // If not, create new chat
-  if (!chat) {
-    chat = {
-      id: username,
-      name: username,
-      pinned: false,
-      lastMessage: '',
-      unread: 0
-    };
-    chats.push(chat);
-    renderChatsList();
-  }
-
-  // Switch to this chat
-  switchToChat(username);
-}
-
-function updateChatPreview(chatId, message) {
-  const chat = chats.find(c => c.id === chatId);
-  if (chat) {
-    chat.lastMessage = message.substring(0, 30) + (message.length > 30 ? '...' : '');
-    renderChatsList();
-  }
 }

@@ -219,75 +219,6 @@ body {
   overflow: hidden;
 }
 
-/* Left Sidebar: Chats List */
-.chats-sidebar {
-  width: 260px;
-  min-width: 200px;
-  background: #F8F9FA;
-  display: flex;
-  flex-direction: column;
-  border-right: 3px solid #D0D0D0;
-}
-
-.chats-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px;
-}
-
-.chat-item {
-  padding: 14px 16px;
-  margin-bottom: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border-radius: 12px;
-  position: relative;
-  border: 2px solid #E8E8E8;
-  background: #FFFFFF;
-}
-
-.chat-item:hover {
-  background: #F5F5F5;
-  border-color: #D0D0D0;
-  transform: translateX(3px);
-}
-
-.chat-item.active {
-  background: #E3F2FD;
-  border-color: #90CAF9;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.15);
-}
-
-.chat-item.pinned {
-  background: #F5F5F5;
-  font-weight: 600;
-}
-
-.chat-item.pinned::before {
-  content: '📌';
-  position: absolute;
-  right: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 13px;
-  opacity: 0.6;
-}
-
-.chat-item-name {
-  font-size: 14px;
-  color: #333;
-  margin-bottom: 5px;
-  font-weight: 600;
-}
-
-.chat-item-preview {
-  font-size: 12px;
-  color: #888;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 /* Center: Chat Area */
 .chat-area {
   flex: 1;
@@ -367,16 +298,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  transition: all 0.3s ease;
-  cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-}
-
-.user-item:hover {
-  background: #F5F5F5;
-  border-color: #D0D0D0;
-  transform: translateX(-3px);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
 }
 
 .user-item.current-user {
@@ -576,7 +498,6 @@ body {
 
 /* Responsive Design */
 @media (max-width: 1400px) {
-  .chats-sidebar,
   .online-users-sidebar {
     width: 220px;
     min-width: 180px;
@@ -588,7 +509,6 @@ body {
 }
 
 @media (max-width: 1200px) {
-  .chats-sidebar,
   .online-users-sidebar {
     width: 200px;
     min-width: 160px;
@@ -611,13 +531,11 @@ body {
 }
 
 @media (max-width: 1000px) {
-  .chats-sidebar,
   .online-users-sidebar {
     width: 180px;
     min-width: 140px;
   }
 
-  .chat-item-preview,
   .user-item-name {
     font-size: 12px;
   }
@@ -631,22 +549,9 @@ body {
   .online-users-sidebar {
     display: none;
   }
-
-  .chats-sidebar {
-    width: 200px;
-  }
 }
 
 @media (max-width: 700px) {
-  .chats-sidebar {
-    width: 160px;
-    min-width: 120px;
-  }
-
-  .chat-item {
-    padding: 10px 12px;
-  }
-
   .chat-header {
     padding: 16px;
   }
@@ -669,10 +574,6 @@ body {
 }
 
 @media (max-width: 500px) {
-  .chats-sidebar {
-    display: none;
-  }
-
   .chat-screen {
     height: 100vh;
   }

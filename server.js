@@ -26,8 +26,6 @@ const userConnections = new Map();
 const typingUsers = new Set();
 // Store read receipts: messageId -> Set of usernames who read it
 const messageReads = new Map();
-// Store private chat activity: 'user1_user2' -> timestamp
-const privateChatActivity = new Map();
 
 // API Routes
 // Set username cookie
@@ -139,76 +137,6 @@ io.on('connection', (socket) => {
     io.emit('new-message', messageData);
   });
 
-  // Handle private messages
-  socket.on('send-private-message', async (data) => {
-    const fromUsername = users.get(socket.id);
-
-    if (!fromUsername) {
-      console.error('Private message from undefined user:', socket.id);
-      return;
-    }
-
-    const { to, message } = data;
-
-    // Validate recipient
-    if (!userConnections.has(to)) {
-      console.error('Recipient not found:', to);
-      return;
-    }
-
-    // Update chat activity
-    updateChatActivity(fromUsername, to);
-
-    // Save message to database (we can use the same messages table)
-    let savedMessage;
-    try {
-      savedMessage = await saveMessage(`${fromUsername} -> ${to}`, message);
-    } catch (error) {
-      console.error('Error saving private message:', error);
-      return;
-    }
-
-    const messageData = {
-      id: savedMessage.id,
-      from: fromUsername,
-      to: to,
-      message: message,
-      timestamp: savedMessage.timestamp.toISOString()
-    };
-
-    // Send to recipient's all sockets
-    const recipientSockets = userConnections.get(to);
-    if (recipientSockets) {
-      recipientSockets.forEach(socketId => {
-        io.to(socketId).emit('private-message', messageData);
-      });
-    }
-
-    // Send back to sender's all sockets (for multi-tab support)
-    const senderSockets = userConnections.get(fromUsername);
-    if (senderSockets) {
-      senderSockets.forEach(socketId => {
-        io.to(socketId).emit('private-message', {
-          ...messageData,
-          from: to // Show as if it's from the other person
-        });
-      });
-    }
-  });
-
-  // Handle switching to general chat
-  socket.on('switch-to-general', () => {
-    // Just acknowledge, no special handling needed
-  });
-
-  // Handle switching to private chat
-  socket.on('switch-to-private', (username) => {
-    const currentUsername = users.get(socket.id);
-    if (currentUsername && username) {
-      updateChatActivity(currentUsername, username);
-    }
-  });
-
   // Handle user typing
   socket.on('typing', () => {
     const username = users.get(socket.id);
@@ -285,17 +213,6 @@ io.on('connection', (socket) => {
   });
 });
 
-// Helper function to generate consistent chat ID for two users
-function getChatId(user1, user2) {
-  return [user1, user2].sort().join('_');
-}
-
-// Helper function to update private chat activity
-function updateChatActivity(user1, user2) {
-  const chatId = getChatId(user1, user2);
-  privateChatActivity.set(chatId, Date.now());
-}
-
 // Helper function to broadcast typing users
 function broadcastTypingUsers() {
   // Clean up stale socket IDs from typingUsers
@@ -314,39 +231,6 @@ function broadcastTypingUsers() {
 
   io.emit('typing-users-update', typingUsernames);
 }
-
-// Auto-delete inactive private chats (1 minute of inactivity)
-function cleanupInactiveChats() {
-  const now = Date.now();
-  const INACTIVITY_TIMEOUT = 60 * 1000; // 1 minute in milliseconds
-
-  privateChatActivity.forEach((lastActivity, chatId) => {
-    if (now - lastActivity > INACTIVITY_TIMEOUT) {
-      // Parse chat ID to get both users
-      const [user1, user2] = chatId.split('_');
-
-      // Notify both users if they're online
-      if (userConnections.has(user1)) {
-        userConnections.get(user1).forEach(socketId => {
-          io.to(socketId).emit('chat-deleted', { chatId: user2 });
-        });
-      }
-
-      if (userConnections.has(user2)) {
-        userConnections.get(user2).forEach(socketId => {
-          io.to(socketId).emit('chat-deleted', { chatId: user1 });
-        });
-      }
-
-      // Remove from activity map
-      privateChatActivity.delete(chatId);
-      console.log(`Deleted inactive chat: ${chatId}`);
-    }
-  });
-}
-
-// Run cleanup every 10 seconds
-setInterval(cleanupInactiveChats, 10 * 1000);
 
 // Initialize database and start server
 async function startServer() {
