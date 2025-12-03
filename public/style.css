@@ -522,7 +522,7 @@ body {
   border-radius: 10px;
   cursor: pointer;
   font-size: 18px;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -530,7 +530,13 @@ body {
 
 .settings-btn:hover {
   background: rgba(255, 255, 255, 0.2);
-  transform: translateY(-1px) rotate(45deg);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.05);
+}
+
+.settings-btn:active {
+  background: rgba(255, 255, 255, 0.15);
+  transform: scale(0.95);
 }
 
 .logout-btn {
