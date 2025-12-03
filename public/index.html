@@ -51,16 +51,13 @@
       <div class="chat-header">
         <div class="header-left">
           <h2>🌍 World Chatting</h2>
-          <div class="language-switcher-chat">
-            <button class="lang-btn" data-lang="en" title="English">EN</button>
-            <button class="lang-btn" data-lang="ru" title="Русский">RU</button>
-          </div>
         </div>
         <div class="user-info">
           <div class="user-details">
             <span id="username-display"></span>
             <span class="users-count">Users online: <span id="users-count">0</span></span>
           </div>
+          <button id="settings-btn" class="settings-btn" title="Settings">⚙️</button>
           <button id="logout-btn" class="logout-btn">Выйти</button>
         </div>
       </div>
@@ -96,6 +93,31 @@
           </div>
           <div class="users-list" id="users-list">
             <!-- Users will be added here dynamically -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-overlay hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>⚙️ Settings</h3>
+          <button id="close-modal-btn" class="close-modal-btn">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="setting-item">
+            <label class="setting-label">Language / Язык</label>
+            <div class="language-options">
+              <button class="lang-option-btn" data-lang="en">
+                <span class="lang-flag">🇬🇧</span>
+                <span class="lang-name">English</span>
+              </button>
+              <button class="lang-option-btn" data-lang="ru">
+                <span class="lang-flag">🇷🇺</span>
+                <span class="lang-name">Русский</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -20,6 +20,7 @@ const translations = {
     online: 'Online',
     typeMessage: 'Type a message...',
     send: 'Send',
+    settings: 'Settings',
 
     // System messages
     userJoined: 'joined the chat',
@@ -63,6 +64,7 @@ const translations = {
     online: 'Онлайн',
     typeMessage: 'Введите сообщение...',
     send: 'Отправить',
+    settings: 'Настройки',
 
     // System messages
     userJoined: 'присоединился к чату',
@@ -187,6 +189,13 @@ function updateAllTexts() {
 
   const sendBtn = document.getElementById('send-btn');
   if (sendBtn) sendBtn.textContent = t('send');
+
+  // Settings modal
+  const modalTitle = document.querySelector('.modal-header h3');
+  if (modalTitle) modalTitle.innerHTML = `⚙️ ${t('settings')}`;
+
+  const settingsBtnTitle = document.getElementById('settings-btn');
+  if (settingsBtnTitle) settingsBtnTitle.title = t('settings');
 
   // Update users online text
   updateUsersOnlineText();

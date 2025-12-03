@@ -16,6 +16,9 @@ const sendBtn = document.getElementById('send-btn');
 const typingIndicator = document.getElementById('typing-indicator');
 const chatContainer = document.querySelector('.chat-container');
 const animatedBackground = document.querySelector('.animated-background');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const closeModalBtn = document.getElementById('close-modal-btn');
 
 let currentUsername = '';
 let typingTimeout;
@@ -70,6 +73,32 @@ function updateLanguageButtons() {
   });
 }
 
+// Update active language button in modal
+function updateModalLanguageButtons() {
+  document.querySelectorAll('.lang-option-btn').forEach(btn => {
+    if (btn.dataset.lang === currentLang) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
+
+// Open settings modal
+function openSettingsModal() {
+  if (settingsModal) {
+    settingsModal.classList.remove('hidden');
+    updateModalLanguageButtons();
+  }
+}
+
+// Close settings modal
+function closeSettingsModal() {
+  if (settingsModal) {
+    settingsModal.classList.add('hidden');
+  }
+}
+
 // Wait for DOM to be ready before initializing
 document.addEventListener('DOMContentLoaded', () => {
   // Initialize language system
@@ -77,12 +106,40 @@ document.addEventListener('DOMContentLoaded', () => {
   updateAllTexts();
   updateLanguageButtons();
 
-  // Language switcher event listeners
+  // Language switcher event listeners (login screen)
   document.querySelectorAll('.lang-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const lang = btn.dataset.lang;
       setLanguage(lang);
       updateLanguageButtons();
+    });
+  });
+
+  // Settings modal event listeners
+  if (settingsBtn) {
+    settingsBtn.addEventListener('click', openSettingsModal);
+  }
+
+  if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', closeSettingsModal);
+  }
+
+  // Close modal when clicking outside of it
+  if (settingsModal) {
+    settingsModal.addEventListener('click', (e) => {
+      if (e.target === settingsModal) {
+        closeSettingsModal();
+      }
+    });
+  }
+
+  // Language option buttons in modal
+  document.querySelectorAll('.lang-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const lang = btn.dataset.lang;
+      setLanguage(lang);
+      updateModalLanguageButtons();
+      updateLanguageButtons(); // Update login screen buttons too
     });
   });
 
