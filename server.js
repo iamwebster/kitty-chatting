@@ -27,6 +27,46 @@ const typingUsers = new Set();
 // Store read receipts: messageId -> Set of usernames who read it
 const messageReads = new Map();
 
+// Validate username format
+function validateUsername(input) {
+  if (!input || !input.trim()) {
+    return { valid: false, error: 'Username is required' };
+  }
+
+  const username = input.trim();
+
+  // Check for multiple # symbols
+  const hashCount = (username.match(/#/g) || []).length;
+  if (hashCount > 1) {
+    return { valid: false, error: 'Only one # symbol allowed' };
+  }
+
+  // Check format: only English letters, numbers, and optionally one #
+  const validFormat = /^[a-zA-Z0-9]+#?[a-zA-Z0-9]*$/;
+  if (!validFormat.test(username)) {
+    return { valid: false, error: 'Only English letters and numbers allowed' };
+  }
+
+  // Check that # is not at the beginning or end
+  if (username.startsWith('#') || username.endsWith('#')) {
+    return { valid: false, error: 'Invalid # position' };
+  }
+
+  // Check username length (without secret)
+  const parts = username.split('#');
+  const usernameOnly = parts[0];
+
+  if (usernameOnly.length < 2) {
+    return { valid: false, error: 'Username too short (min 2 characters)' };
+  }
+
+  if (usernameOnly.length > 20) {
+    return { valid: false, error: 'Username too long (max 20 characters)' };
+  }
+
+  return { valid: true };
+}
+
 // Helper function to parse tripcode input
 function parseTripcodeInput(input) {
   // Format: "Username#secret" or just "Username"
@@ -44,8 +84,11 @@ function parseTripcodeInput(input) {
 // Set username cookie (with tripcode support)
 app.post('/api/login', async (req, res) => {
   const { username } = req.body;
-  if (!username || !username.trim()) {
-    return res.status(400).json({ success: false, error: 'Username is required' });
+
+  // Validate username format
+  const validation = validateUsername(username);
+  if (!validation.valid) {
+    return res.status(400).json({ success: false, error: validation.error });
   }
 
   try {

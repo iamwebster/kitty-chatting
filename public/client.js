@@ -233,11 +233,54 @@ usernameInput.addEventListener('input', () => {
   }
 });
 
+function validateUsername(input) {
+  // Check if empty
+  if (!input || !input.trim()) {
+    return { valid: false, error: 'usernameRequired' };
+  }
+
+  const username = input.trim();
+
+  // Check for multiple # symbols
+  const hashCount = (username.match(/#/g) || []).length;
+  if (hashCount > 1) {
+    return { valid: false, error: 'usernameOneHashOnly' };
+  }
+
+  // Check format: only English letters, numbers, and optionally one #
+  // Format: [a-zA-Z0-9]+#?[a-zA-Z0-9]*
+  const validFormat = /^[a-zA-Z0-9]+#?[a-zA-Z0-9]*$/;
+  if (!validFormat.test(username)) {
+    return { valid: false, error: 'usernameInvalidFormat' };
+  }
+
+  // Check that # is not at the beginning or end
+  if (username.startsWith('#') || username.endsWith('#')) {
+    return { valid: false, error: 'usernameHashPosition' };
+  }
+
+  // Check username length (without secret)
+  const parts = username.split('#');
+  const usernameOnly = parts[0];
+
+  if (usernameOnly.length < 2) {
+    return { valid: false, error: 'usernameTooShort' };
+  }
+
+  if (usernameOnly.length > 20) {
+    return { valid: false, error: 'usernameTooLong' };
+  }
+
+  return { valid: true };
+}
+
 async function joinChat() {
   const username = usernameInput.value.trim();
-  if (!username) {
-    // Show error if username is empty
-    showUsernameError();
+
+  // Validate username format
+  const validation = validateUsername(username);
+  if (!validation.valid) {
+    showUsernameError(validation.error);
     return;
   }
 
@@ -259,17 +302,19 @@ async function joinChat() {
       const data = await response.json();
       // Use the full username with tripcode and userId returned from server
       enterChat(data.username, data.userId);
+    } else {
+      const errorData = await response.json();
+      showUsernameError(errorData.error || 'usernameRequired');
     }
   } catch (error) {
     console.error('Login error:', error);
-    // Still allow login even if cookie fails
-    enterChat(username, null);
+    showUsernameError('usernameRequired');
   }
 }
 
-function showUsernameError() {
+function showUsernameError(errorKey = 'usernameRequired') {
   if (usernameError) {
-    usernameError.textContent = t('usernameRequired');
+    usernameError.textContent = t(errorKey);
     usernameError.classList.remove('hidden');
     usernameInput.focus();
   }
