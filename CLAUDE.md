@@ -2,6 +2,18 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🔴 IMPORTANT: Development Workflow
+
+**ALWAYS commit and push changes immediately after implementing them.**
+
+When making any code changes:
+1. Implement the feature/fix
+2. Immediately run `git add` + `git commit` + `git push`
+3. Do NOT wait for user approval
+4. Changes auto-deploy via GitHub Actions CI/CD
+
+This is a strict requirement for this project.
+
 ## Project Overview
 
 **Kitty Chatting** - мемный котовый мессенджер для обмена сообщениями, мемами и гифками с котами.
@@ -24,15 +36,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Подсчет уникальных пользователей (не по вкладкам)
 - ✅ Синхронизация логаута между вкладками
 - ✅ CI/CD через GitHub Actions
+- ✅ Космическая тема с 3D звездным фоном (Three.js WebGL)
+- ✅ Темная тема чата с glassmorphism эффектами
+- ✅ Fullscreen desktop app стиль (без рамок)
+- ✅ Звуковые уведомления для сообщений (Web Audio API)
+- ✅ Полная локализация EN/RU с автоопределением языка браузера
+- ✅ Настройки в модальном окне (язык интерфейса)
+- ✅ Полная мобильная адаптивность (portrait + landscape)
+- ✅ Валидация формы логина с красными сообщениями об ошибках
+- ✅ Реалистичный favicon с планетой Земля
 
 ## Architecture
 
 ### Stack
 - **Backend**: Node.js + Express + Socket.io
-- **Frontend**: Vanilla JavaScript (ES6+)
+- **Frontend**: Vanilla JavaScript (ES6+), Three.js (WebGL)
 - **Database**: PostgreSQL
 - **Deployment**: Custom VPS (Ubuntu) + Nginx + PM2
 - **CI/CD**: GitHub Actions → SSH → Auto-deploy
+- **Audio**: Web Audio API (programmatic sound generation)
+- **Localization**: Cookie-based language persistence (EN/RU)
 
 ### File Structure
 ```
@@ -41,11 +64,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ├── db.js                  # Database: PostgreSQL queries
 ├── ecosystem.config.js    # PM2 configuration
 ├── public/
-│   ├── index.html        # Frontend markup
-│   ├── style.css         # Styles with gradient theme
-│   └── client.js         # Client-side Socket.io logic
+│   ├── index.html        # Frontend markup (login + chat + modal)
+│   ├── style.css         # Styles (dark theme + responsive)
+│   ├── client.js         # Client-side Socket.io + modal logic
+│   ├── translations.js   # i18n system (EN/RU)
+│   ├── planet.js         # Three.js star field animation
+│   └── favicon.svg       # Realistic Earth planet icon
 ├── .github/workflows/
 │   └── deploy.yml        # Auto-deploy on push to main
+├── CLAUDE.md             # This file (dev documentation)
+├── README.md             # User-facing documentation
 └── .env                  # Config (NOT in git)
 ```
 
@@ -211,10 +239,10 @@ Located at: `/etc/nginx/sites-available/kitty-chatting`
 - 🏷️ #hashtags and cat categories
 - ⭐ Favorite memes/messages
 - 🔍 Search messages
-- 🌙 Dark mode theme
-- 📱 Mobile responsive improvements
 - 🔔 Desktop notifications
 - 🎭 Custom emoji/stickers
+- 🌍 More languages (beyond EN/RU)
+- ⚙️ More settings (notifications, sounds, theme customization)
 
 ### Technical Improvements
 - Add user registration/authentication
@@ -246,11 +274,21 @@ Located at: `/etc/nginx/sites-available/kitty-chatting`
 
 ## Color Scheme & Branding
 
-### Primary Colors
-- Purple gradient: `#667eea` → `#764ba2`
-- Read checkmark: `#667eea` (blue)
-- Unread checkmark: `#a0a0a0` (gray)
-- Online indicator: `#10b981` (green)
+### Primary Colors (Dark Cosmic Theme)
+- Cosmic gradient: `#0f0c29` → `#302b63` → `#24243e` → `#1a1a2e`
+- Read checkmark: `#2196F3` (blue)
+- Unread checkmark: `rgba(0, 0, 0, 0.4)` (gray)
+- Online indicator: `#4CAF50` (green)
+- Active language button: `#27AE60` (green)
+- Error messages: `#E74C3C` (red)
+- Buttons/accents: `#4A90E2` (blue)
 
 ### Theme
-Котовый мессенджер с фиолетовым градиентом и дружелюбным интерфейсом для мемного сообщества.
+Космический мессенджер с темной темой, эффектами glassmorphism, 3D звездным фоном и футуристичным дизайном для глобального сообщества.
+
+### Design Elements
+- **3D Star Field**: 6000 stars with varying sizes, rotating slowly
+- **Glassmorphism**: Semi-transparent UI with backdrop-filter blur
+- **Fullscreen Layout**: No borders/margins, native app feel
+- **Animations**: Smooth transitions, shake effects, rotating settings icon
+- **Responsive**: Breakpoints at 500px, 400px + landscape optimization
