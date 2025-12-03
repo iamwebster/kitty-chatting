@@ -224,14 +224,6 @@ function updateAllTexts() {
   const previewLabel = document.querySelector('.preview-label');
   if (previewLabel) previewLabel.textContent = t('identityPreview');
 
-  // Update features
-  const featureTexts = document.querySelectorAll('.feature-text');
-  if (featureTexts.length >= 3) {
-    featureTexts[0].textContent = t('featureMessaging');
-    featureTexts[1].textContent = t('featureReceipts');
-    featureTexts[2].textContent = t('featureOnline');
-  }
-
   // Chat screen
   const chatTitle = document.querySelector('.chat-header h2');
   if (chatTitle) chatTitle.innerHTML = `🌍 ${t('appName')}`;
