@@ -154,6 +154,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check for existing session on page load
   checkAuth();
+
+  // Add scroll event listener to chat container for marking messages as read
+  if (chatContainer) {
+    let scrollTimeout;
+    chatContainer.addEventListener('scroll', () => {
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        markVisibleMessagesAsRead();
+      }, 300);
+    });
+  }
 });
 
 // Listen for logout events from other tabs
@@ -442,10 +453,10 @@ socket.on('new-message', (data) => {
     playMessageSound();
   }
 
-  // Mark message as read if it's not from current user
-  if (data.username !== currentUsername && data.id) {
-    markMessagesAsRead([data.id]);
-  }
+  // Mark visible messages as read after a short delay
+  setTimeout(() => {
+    markVisibleMessagesAsRead();
+  }, 500);
 });
 
 socket.on('users-list', (users) => {
@@ -495,6 +506,11 @@ socket.on('message-history', (messages) => {
 
   // Scroll to bottom after loading history
   chatContainer.scrollTop = chatContainer.scrollHeight;
+
+  // Mark visible messages as read after loading history
+  setTimeout(() => {
+    markVisibleMessagesAsRead();
+  }, 500);
 });
 
 socket.on('typing-users-update', (typingUsernames) => {
@@ -521,6 +537,32 @@ socket.on('message-read', (data) => {
 function markMessagesAsRead(messageIds) {
   if (messageIds.length > 0) {
     socket.emit('mark-messages-read', messageIds);
+  }
+}
+
+// Check and mark visible messages as read
+function markVisibleMessagesAsRead() {
+  const messages = document.querySelectorAll('.message.other[data-message-id]');
+  const messageIdsToRead = [];
+
+  messages.forEach(messageEl => {
+    const messageId = messageEl.dataset.messageId;
+    if (!messageId) return;
+
+    // Check if message is in viewport
+    const rect = messageEl.getBoundingClientRect();
+    const isVisible = (
+      rect.top >= 0 &&
+      rect.bottom <= (window.innerHeight || document.documentElement.clientHeight)
+    );
+
+    if (isVisible) {
+      messageIdsToRead.push(parseInt(messageId));
+    }
+  });
+
+  if (messageIdsToRead.length > 0) {
+    markMessagesAsRead(messageIdsToRead);
   }
 }
 

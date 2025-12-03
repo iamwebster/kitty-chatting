@@ -761,12 +761,12 @@ body {
 
 .message-checkmark {
   font-size: 12px;
-  color: rgba(0, 0, 0, 0.4);
+  color: rgba(0, 0, 0, 0.4);  /* Gray - unread */
   transition: color 0.3s;
 }
 
 .message-checkmark.read {
-  color: #2196F3;
+  color: #4CAF50;  /* Green - read by others */
 }
 
 .system-message {
