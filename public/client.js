@@ -84,6 +84,10 @@ function performLogout() {
     animatedBackground.style.display = 'block';
     setTimeout(() => {
       animatedBackground.style.opacity = '1';
+      // Restart planet animation
+      if (typeof startPlanetAnimation === 'function') {
+        startPlanetAnimation();
+      }
     }, 10);
   }
 
@@ -135,6 +139,10 @@ function enterChat(username) {
     animatedBackground.style.opacity = '0';
     setTimeout(() => {
       animatedBackground.style.display = 'none';
+      // Stop planet animation to save resources
+      if (typeof stopPlanetAnimation === 'function') {
+        stopPlanetAnimation();
+      }
     }, 500);
   }
 }
