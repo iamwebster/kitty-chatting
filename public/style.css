@@ -95,6 +95,39 @@ body {
   min-width: 400px;
   max-width: 500px;
   animation: slideUp 0.5s ease;
+  position: relative;
+}
+
+/* Language Switcher */
+.language-switcher {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 6px;
+}
+
+.lang-btn {
+  padding: 6px 12px;
+  background: #F5F5F5;
+  color: #666;
+  border: 2px solid #E0E0E0;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.lang-btn:hover {
+  background: #E8E8E8;
+  border-color: #D0D0D0;
+}
+
+.lang-btn.active {
+  background: #4A90E2;
+  color: #ffffff;
+  border-color: #4A90E2;
 }
 
 @keyframes slideUp {
@@ -238,10 +271,44 @@ body {
   backdrop-filter: blur(10px);
 }
 
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
 .chat-header h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
+}
+
+.language-switcher-chat {
+  display: flex;
+  gap: 6px;
+}
+
+.language-switcher-chat .lang-btn {
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.language-switcher-chat .lang-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.language-switcher-chat .lang-btn.active {
+  background: rgba(100, 150, 255, 0.3);
+  color: #ffffff;
+  border-color: rgba(100, 150, 255, 0.5);
 }
 
 .user-info {

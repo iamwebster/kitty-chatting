@@ -59,8 +59,33 @@ function playMessageSound() {
   oscillator.stop(now + 0.15);
 }
 
+// Initialize language system
+initLanguage();
+updateAllTexts();
+updateLanguageButtons();
+
 // Check for existing session on page load
 checkAuth();
+
+// Language switcher event listeners
+document.querySelectorAll('.lang-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const lang = btn.dataset.lang;
+    setLanguage(lang);
+    updateLanguageButtons();
+  });
+});
+
+// Update active language button state
+function updateLanguageButtons() {
+  document.querySelectorAll('.lang-btn').forEach(btn => {
+    if (btn.dataset.lang === currentLang) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  });
+}
 
 // Listen for logout events from other tabs
 window.addEventListener('storage', (e) => {
@@ -220,7 +245,7 @@ function stopTyping() {
 socket.on('user-connected', (data) => {
   usersCount.textContent = data.totalUsers;
   onlineCount.textContent = data.totalUsers;
-  addSystemMessage(`${data.username} joined the chat`);
+  addSystemMessage(`${data.username} ${t('userJoined')}`);
 
   // Add user to the top of the list
   addUserToList(data.username);
@@ -230,7 +255,7 @@ socket.on('user-disconnected', (data) => {
   usersCount.textContent = data.totalUsers;
   onlineCount.textContent = data.totalUsers;
   if (data.username) {
-    addSystemMessage(`${data.username} left the chat`);
+    addSystemMessage(`${data.username} ${t('userLeft')}`);
     // Remove user from the list
     removeUserFromList(data.username);
   }
@@ -267,11 +292,12 @@ socket.on('message-history', (messages) => {
   indicatorDiv.className = 'system-message history-indicator';
 
   if (messages.length >= 50) {
-    indicatorDiv.textContent = '📜 На странице отображается последние 50 сообщений';
+    indicatorDiv.textContent = `📜 ${t('historyFull')}`;
   } else if (messages.length > 0) {
-    indicatorDiv.textContent = `📜 Показано ${messages.length} ${getMessageWord(messages.length)} (на странице отображается до 50 последних)`;
+    const messagesWord = translations[currentLang].messagesWord(messages.length);
+    indicatorDiv.textContent = `📜 ${t('historyPartial')} ${messages.length} ${messagesWord} ${t('historyLimit')}`;
   } else {
-    indicatorDiv.textContent = '📜 История пуста. Станьте первым! (на странице отображается до 50 последних сообщений)';
+    indicatorDiv.textContent = `📜 ${t('historyEmpty')} ${t('historyLimit')}`;
   }
 
   messagesContainer.appendChild(indicatorDiv);
@@ -388,12 +414,12 @@ function updateTypingIndicator(typingUsernames) {
   if (typingUsernames.length === 0) {
     typingIndicator.textContent = '';
   } else if (typingUsernames.length === 1) {
-    typingIndicator.textContent = `${typingUsernames[0]} печатает...`;
+    typingIndicator.textContent = `${typingUsernames[0]} ${t('typing')}`;
   } else if (typingUsernames.length === 2) {
-    typingIndicator.textContent = `${typingUsernames[0]} и ${typingUsernames[1]} печатают...`;
+    typingIndicator.textContent = `${typingUsernames[0]} ${currentLang === 'ru' ? 'и' : 'and'} ${typingUsernames[1]} ${t('typingMultiple')}`;
   } else {
     const remaining = typingUsernames.length - 2;
-    typingIndicator.textContent = `${typingUsernames[0]}, ${typingUsernames[1]} и еще ${remaining} печатают...`;
+    typingIndicator.textContent = `${typingUsernames[0]}, ${typingUsernames[1]} ${t('andOthers')} ${remaining} ${t('typingMultiple')}`;
   }
 }
 
@@ -440,22 +466,6 @@ function addSystemMessage(text) {
   messageDiv.textContent = text;
   messagesContainer.appendChild(messageDiv);
   smartScroll();
-}
-
-function getMessageWord(count) {
-  const lastDigit = count % 10;
-  const lastTwoDigits = count % 100;
-
-  if (lastTwoDigits >= 11 && lastTwoDigits <= 19) {
-    return 'сообщений';
-  }
-  if (lastDigit === 1) {
-    return 'сообщение';
-  }
-  if (lastDigit >= 2 && lastDigit <= 4) {
-    return 'сообщения';
-  }
-  return 'сообщений';
 }
 
 function escapeHtml(text) {

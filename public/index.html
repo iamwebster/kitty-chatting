@@ -18,6 +18,10 @@
     <!-- Login Screen -->
     <div id="login-screen" class="login-screen">
       <div class="login-box">
+        <div class="language-switcher">
+          <button class="lang-btn" data-lang="en" title="English">EN</button>
+          <button class="lang-btn" data-lang="ru" title="Русский">RU</button>
+        </div>
         <div class="welcome-icon">🌍</div>
         <h1>Welcome to World Chatting</h1>
         <p class="welcome-subtitle">Connect with people from around the globe in real-time</p>
@@ -45,7 +49,13 @@
     <!-- Chat Screen -->
     <div id="chat-screen" class="chat-screen hidden">
       <div class="chat-header">
-        <h2>🌍 World Chatting</h2>
+        <div class="header-left">
+          <h2>🌍 World Chatting</h2>
+          <div class="language-switcher-chat">
+            <button class="lang-btn" data-lang="en" title="English">EN</button>
+            <button class="lang-btn" data-lang="ru" title="Русский">RU</button>
+          </div>
+        </div>
         <div class="user-info">
           <div class="user-details">
             <span id="username-display"></span>
