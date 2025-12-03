@@ -135,6 +135,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Close modal on Escape key
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && settingsModal && !settingsModal.classList.contains('hidden')) {
+      closeSettingsModal();
+    }
+  });
+
   // Language option buttons in modal
   document.querySelectorAll('.lang-option-btn').forEach(btn => {
     btn.addEventListener('click', () => {
