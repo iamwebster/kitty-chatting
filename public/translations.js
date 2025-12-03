@@ -10,6 +10,7 @@ const translations = {
     enterName: 'Enter your name',
     joinChat: 'Join Chat',
     usernameRequired: 'Please enter your name to continue',
+    tripcodeHint: 'Tip: Use Name#secret to keep your identity across devices',
 
     // Chat header
     appName: 'World Chatting',
@@ -55,6 +56,7 @@ const translations = {
     enterName: 'Введите ваше имя',
     joinChat: 'Войти в чат',
     usernameRequired: 'Пожалуйста, введите ваше имя для продолжения',
+    tripcodeHint: 'Подсказка: Используйте Имя#секрет чтобы сохранить личность на всех устройствах',
 
     // Chat header
     appName: 'World Chatting',
@@ -178,6 +180,10 @@ function updateAllTexts() {
   if (usernameError && !usernameError.classList.contains('hidden')) {
     usernameError.textContent = t('usernameRequired');
   }
+
+  // Update tripcode hint
+  const tripcodeHint = document.querySelector('.tripcode-hint');
+  if (tripcodeHint) tripcodeHint.textContent = t('tripcodeHint');
 
   // Chat screen
   const chatTitle = document.querySelector('.chat-header h2');

@@ -163,8 +163,8 @@ async function checkAuth() {
     const data = await response.json();
 
     if (data.username) {
-      // Auto-login with saved username
-      enterChat(data.username);
+      // Auto-login with saved username and userId
+      enterChat(data.username, data.userId);
     }
   } catch (error) {
     console.error('Auth check error:', error);
@@ -257,13 +257,13 @@ async function joinChat() {
 
     if (response.ok) {
       const data = await response.json();
-      // Use the full username with tag returned from server
-      enterChat(data.username);
+      // Use the full username with tripcode and userId returned from server
+      enterChat(data.username, data.userId);
     }
   } catch (error) {
     console.error('Login error:', error);
     // Still allow login even if cookie fails
-    enterChat(username);
+    enterChat(username, null);
   }
 }
 
@@ -281,9 +281,12 @@ function hideUsernameError() {
   }
 }
 
-function enterChat(username) {
+function enterChat(username, userId = null) {
   currentUsername = username;
-  socket.emit('user-joined', username);
+
+  // Send username and userId to server
+  socket.emit('user-joined', { username, userId });
+
   loginScreen.classList.add('hidden');
   chatScreen.classList.remove('hidden');
   usernameDisplay.textContent = username;
